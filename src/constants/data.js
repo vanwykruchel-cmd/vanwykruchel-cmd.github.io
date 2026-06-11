@@ -1,7 +1,8 @@
 export const CONTACT = {
-  email: 'info@vanwykfamilylaw.co.za',
-  whatsapp: '27000000000', // TODO: replace with real WhatsApp number (no + or spaces)
-  whatsappDisplay: 'WhatsApp number to be confirmed',
+  // Will become info@vanwykfamilylaw.co.za once the domain is purchased.
+  email: 'vanwykruchel@gmail.com',
+  whatsapp: '27607023765',
+  whatsappDisplay: '060 702 3765',
 };
 
 export const DISCLAIMER =

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import VWLogo from './components/VWLogo';
 import {
   GapSection,
@@ -227,16 +227,18 @@ function Leaf({ top, left, right, delay, duration, size = 16 }) {
   );
 }
 
+const LOGO_CANDIDATES = ['logo.png', 'logo.jpg', 'logo.jpeg'];
+
 function HeroLogo() {
-  const [usePng, setUsePng] = useState(true);
-  if (usePng) {
+  const [idx, setIdx] = useState(0);
+  if (idx < LOGO_CANDIDATES.length) {
     return (
       <img
-        src={`${import.meta.env.BASE_URL}logo.png`}
+        src={`${import.meta.env.BASE_URL}${LOGO_CANDIDATES[idx]}`}
         alt="Van Wyk Family Law Advisory"
-        onError={() => setUsePng(false)}
+        onError={() => setIdx(idx + 1)}
         style={{
-          width: 'min(460px, 82vw)',
+          width: 'min(560px, 88vw)',
           mixBlendMode: 'multiply',
           animation: 'fadeUp 1.4s ease both',
         }}
@@ -295,7 +297,7 @@ function Hero({ scrollY, onNavigate }) {
             animation: 'fadeUp 1s ease 1.5s both',
           }}
         >
-          Specialist divorce, maintenance, children's court and protection order guidance â€” online, nationwide,
+          Specialist divorce, maintenance, children's court and protection order guidance — online, nationwide,
           at a fixed fee you agree to in writing before any work begins.
         </p>
         <div
@@ -324,7 +326,7 @@ function Hero({ scrollY, onNavigate }) {
             animation: 'fadeUp 1s ease 2.3s both',
           }}
         >
-          Family Law Consultant (LLB, UNISA) Â· Legal consultancy â€” not a law firm Â· All nine provinces
+          Family Law Consultant (LLB, UNISA) · Legal consultancy — not a law firm · All nine provinces
         </p>
       </div>
     </header>
@@ -347,7 +349,7 @@ function Footer({ onNavigate }) {
           <div>
             <VWLogo size={80} light />
             <p style={{ color: 'rgba(247,243,236,0.6)', lineHeight: 1.75, marginTop: 16, fontSize: '0.92rem' }}>
-              Specialist family law guidance, document preparation and court coaching. Online and telephonic â€”
+              Specialist family law guidance, document preparation and court coaching. Online and telephonic —
               nationwide.
             </p>
           </div>
@@ -382,8 +384,16 @@ function Footer({ onNavigate }) {
             <a href={`mailto:${CONTACT.email}`} style={{ display: 'block', color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}>
               {CONTACT.email}
             </a>
+            <a
+              href={`https://wa.me/${CONTACT.whatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}
+            >
+              WhatsApp: {CONTACT.whatsappDisplay}
+            </a>
             <p style={{ color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}>
-              EFT only â€” no online payment
+              EFT only — no online payment
             </p>
             <p style={{ color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}>
               All nine provinces of South Africa
@@ -394,7 +404,7 @@ function Footer({ onNavigate }) {
           {DISCLAIMER}
         </p>
         <p style={{ color: 'rgba(247,243,236,0.35)', fontSize: '0.78rem', marginTop: 24 }}>
-          Â© {new Date().getFullYear()} Van Wyk Family Law Advisory. All rights reserved.
+          © {new Date().getFullYear()} Van Wyk Family Law Advisory. All rights reserved.
         </p>
       </div>
     </footer>

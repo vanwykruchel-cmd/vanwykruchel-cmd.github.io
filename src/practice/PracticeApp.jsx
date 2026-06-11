@@ -41,7 +41,7 @@ function load() {
     pin: null,
     settings: {
       ownerName: 'Van Wyk Family Law Advisory',
-      email: 'info@vanwykfamilylaw.co.za',
+      email: 'vanwykruchel@gmail.com',
       phone: '',
       bankName: '',
       accName: '',

@@ -506,13 +506,37 @@ export function FAQSection({ limit }) {
 /* ---------- CONTACT ---------- */
 export function ContactSection() {
   const ref = useReveal();
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | sending | sent | error
+  const sent = status === 'sent';
   const [consent, setConsent] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!consent) return;
-    setSent(true);
+    if (!consent || status === 'sending') return;
+    setStatus('sending');
+    const fd = new FormData(e.target);
+    const payload = {
+      _subject: `New website enquiry — ${fd.get('matterType')}`,
+      Name: `${fd.get('firstName')} ${fd.get('lastName')}`,
+      Email: fd.get('email'),
+      Phone: fd.get('phone'),
+      'Matter Type': fd.get('matterType'),
+      Province: fd.get('province'),
+      'Income Bracket': fd.get('income'),
+      Description: fd.get('description'),
+      'POPIA Consent': 'Given',
+    };
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${CONTACT.email}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('send failed');
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    }
   }
 
   const inputStyle = {
@@ -665,9 +689,20 @@ export function ContactSection() {
               </span>
             </label>
             <div>
-              <button type="submit" className="btn-copper" disabled={!consent} style={{ opacity: consent ? 1 : 0.55 }}>
-                Send Enquiry
+              <button
+                type="submit"
+                className="btn-copper"
+                disabled={!consent || status === 'sending'}
+                style={{ opacity: consent ? 1 : 0.55 }}
+              >
+                {status === 'sending' ? 'Sending…' : 'Send Enquiry'}
               </button>
+              {status === 'error' && (
+                <p style={{ color: '#a33', marginTop: 12, lineHeight: 1.6 }}>
+                  Something went wrong sending your enquiry. Please try again, or message us directly on WhatsApp
+                  at {CONTACT.whatsappDisplay}.
+                </p>
+              )}
             </div>
           </form>
         )}
@@ -679,6 +714,20 @@ export function ContactSection() {
             </p>
             <a href={`mailto:${CONTACT.email}`} className="serif" style={{ fontSize: '1.2rem', color: 'var(--forest)' }}>
               {CONTACT.email}
+            </a>
+          </div>
+          <div>
+            <p style={{ fontSize: '0.78rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--copper)', fontWeight: 600 }}>
+              WhatsApp
+            </p>
+            <a
+              href={`https://wa.me/${CONTACT.whatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="serif"
+              style={{ fontSize: '1.2rem', color: 'var(--forest)' }}
+            >
+              {CONTACT.whatsappDisplay}
             </a>
           </div>
           <div>
