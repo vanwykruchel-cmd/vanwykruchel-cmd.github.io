@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import VWLogo from './components/VWLogo';
-import BranchCanvas from './components/BranchCanvas';
 import {
   GapSection,
   HowSection,
@@ -200,20 +199,50 @@ function Nav({ scrolled, onNavigate }) {
   );
 }
 
+function Leaf({ top, left, right, delay, duration, size = 16 }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      style={{
+        position: 'absolute',
+        top,
+        left,
+        right,
+        opacity: 0.3,
+        animation: `leafDrift ${duration}s ease-in-out ${delay}s infinite alternate`,
+      }}
+      aria-hidden="true"
+    >
+      <path
+        d="M12 2 C18 6 20 14 12 22 C4 14 6 6 12 2 Z M12 6 L12 18"
+        stroke="#c98a65"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function Hero({ scrollY, onNavigate }) {
   return (
     <header
       style={{
         position: 'relative',
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, var(--darkgreen) 0%, var(--forest) 100%)',
+        background: 'radial-gradient(ellipse at 50% 30%, var(--lightgreen) 0%, var(--forest) 45%, var(--darkgreen) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
       }}
     >
-      <BranchCanvas />
+      <Leaf top="18%" left="12%" delay={0} duration={9} size={18} />
+      <Leaf top="30%" right="14%" delay={2} duration={11} size={14} />
+      <Leaf top="62%" left="20%" delay={4} duration={10} size={12} />
+      <Leaf top="55%" right="22%" delay={1} duration={12} size={16} />
       <div
         style={{
           position: 'relative',
@@ -225,8 +254,8 @@ function Hero({ scrollY, onNavigate }) {
           opacity: Math.max(0, 1 - scrollY / 520),
         }}
       >
-        <div style={{ animation: 'fadeUp 1s ease both' }}>
-          <VWLogo size={130} light />
+        <div>
+          <VWLogo size={170} light draw />
         </div>
         <h1
           style={{
@@ -234,7 +263,7 @@ function Hero({ scrollY, onNavigate }) {
             fontSize: 'clamp(2.2rem, 5.5vw, 4rem)',
             lineHeight: 1.12,
             marginTop: 30,
-            animation: 'fadeUp 1s ease 0.2s both',
+            animation: 'fadeUp 1s ease 1.1s both',
           }}
         >
           Family law guidance for the people the system forgot.
@@ -246,7 +275,7 @@ function Hero({ scrollY, onNavigate }) {
             lineHeight: 1.8,
             maxWidth: 640,
             margin: '26px auto 0',
-            animation: 'fadeUp 1s ease 0.35s both',
+            animation: 'fadeUp 1s ease 1.5s both',
           }}
         >
           Specialist divorce, maintenance, children's court and protection order guidance — online, nationwide,
@@ -259,7 +288,7 @@ function Hero({ scrollY, onNavigate }) {
             justifyContent: 'center',
             flexWrap: 'wrap',
             marginTop: 38,
-            animation: 'fadeUp 1s ease 0.5s both',
+            animation: 'fadeUp 1s ease 1.9s both',
           }}
         >
           <button className="btn-copper" onClick={() => onNavigate('contact')}>
@@ -275,7 +304,7 @@ function Hero({ scrollY, onNavigate }) {
             fontSize: '0.8rem',
             letterSpacing: '0.08em',
             marginTop: 44,
-            animation: 'fadeUp 1s ease 0.65s both',
+            animation: 'fadeUp 1s ease 2.3s both',
           }}
         >
           Family Law Consultant (LLB, UNISA) · Legal consultancy — not a law firm · All nine provinces

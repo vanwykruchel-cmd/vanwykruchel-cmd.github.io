@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useReveal from './useReveal';
 import Counter from './Counter';
+import { Motif, InkDrawing, SIGNATURE } from './motifs';
 import { SERVICES, FAQS, MATTER_TYPES, INCOME_BRACKETS, PROVINCES, CONTACT } from '../constants/data';
 
 const wrap = { maxWidth: 1100, margin: '0 auto', padding: '0 24px' };
@@ -11,6 +12,7 @@ export function GapSection() {
   return (
     <section ref={ref} id="gap" style={{ background: 'var(--white)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={wrap}>
+        <Motif name="scales" />
         <p className="eyebrow reveal">The Gap in South African Justice</p>
         <h2 className="section-title reveal d1">
           Too much for Legal Aid.
@@ -104,6 +106,7 @@ export function HowSection() {
   return (
     <section ref={ref} id="how" style={{ background: 'var(--cream)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={wrap}>
+        <Motif name="journey" />
         <p className="eyebrow reveal">How It Works</p>
         <h2 className="section-title reveal d1">Four steps. Complete transparency.</h2>
         <div
@@ -165,6 +168,7 @@ export function ServicesSection() {
   return (
     <section ref={ref} id="services" style={{ background: 'var(--white)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={wrap}>
+        <Motif name="twoHomes" />
         <p className="eyebrow reveal">Services</p>
         <h2 className="section-title reveal d1">Five areas. Deep specialisation.</h2>
         <p className="reveal d2" style={{ maxWidth: 640, lineHeight: 1.8, marginBottom: 50 }}>
@@ -270,6 +274,22 @@ export function ScopeSection() {
   return (
     <section ref={ref} id="scope" style={{ background: 'var(--darkgreen)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={wrap}>
+        <div style={{ display: 'flex', marginBottom: 8 }}>
+          <InkDrawing
+            paths={[
+              { d: 'M2,96 C50,96 75,58 112,52', w: 2.5 },
+              {
+                d: 'M150,34 C172,50 196,56 214,57 C214,108 196,152 150,176 C104,152 86,108 86,57 C104,56 128,50 150,34',
+                w: 3,
+              },
+              { d: 'M124,104 L144,126 L182,82', w: 3.5, copper: true },
+            ]}
+            viewBox="0 0 300 200"
+            mode="scroll"
+            strokeBase="rgba(247,243,236,0.85)"
+            style={{ width: '100%', maxWidth: 300 }}
+          />
+        </div>
         <p className="eyebrow reveal">Complete Honesty</p>
         <h2 className="section-title reveal d1" style={{ color: 'var(--cream)' }}>
           What I am — and what I am not.
@@ -356,6 +376,7 @@ export function AboutSection() {
     <section ref={ref} id="about" style={{ background: 'var(--cream)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={{ ...wrap, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 56 }}>
         <div>
+          <Motif name="parentChild" />
           <p className="eyebrow reveal">About</p>
           <h2 className="section-title reveal d1">Why this practice exists.</h2>
           <div className="reveal d2" style={{ display: 'grid', gap: 18, lineHeight: 1.85 }}>
@@ -426,6 +447,7 @@ export function FAQSection({ limit }) {
   return (
     <section ref={ref} id="faq" style={{ background: 'var(--white)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={{ ...wrap, maxWidth: 860 }}>
+        <Motif name="question" maxWidth={260} />
         <p className="eyebrow reveal">Questions, Answered Honestly</p>
         <h2 className="section-title reveal d1">Frequently asked questions.</h2>
         <div style={{ marginTop: 40 }}>
@@ -515,6 +537,16 @@ export function ContactSection() {
   return (
     <section ref={ref} id="contact" style={{ background: 'var(--cream)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
       <div style={{ ...wrap, maxWidth: 920 }}>
+        <div style={{ display: 'flex', marginBottom: 4 }}>
+          <InkDrawing
+            paths={SIGNATURE.paths}
+            viewBox={SIGNATURE.viewBox}
+            mode="auto"
+            duration={3800}
+            pen
+            style={{ width: '100%', maxWidth: 340 }}
+          />
+        </div>
         <p className="eyebrow reveal">Book a Consultation</p>
         <h2 className="section-title reveal d1">Tell me what you are facing.</h2>
         <p className="reveal d2" style={{ maxWidth: 640, lineHeight: 1.8 }}>
