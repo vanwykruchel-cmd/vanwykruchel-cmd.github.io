@@ -504,11 +504,62 @@ export function FAQSection({ limit }) {
 }
 
 /* ---------- CONTACT ---------- */
+/* Optional case-detail questions, shown per matter type. None are required —
+   the client can always choose to discuss everything in consultation instead. */
+const CASE_FIELDS_COMMON = [
+  { name: 'Opposing party — name & surname' },
+  { name: 'Opposing party — ID number (if known)' },
+  { name: 'Opposing party — town / area where they live' },
+  { name: 'Are there children involved?', options: ['Yes', 'No'] },
+  { name: 'Who are the children staying with?' },
+  { name: 'Next court date (if any)', type: 'date' },
+  { name: 'Your monthly income (approximate)' },
+  { name: "Other party's income (if known)" },
+];
+
+const CASE_FIELDS_BY_TYPE = [
+  {
+    match: 'Divorce',
+    fields: [
+      {
+        name: 'How are you married?',
+        options: ['In community of property', 'Out of community — with accrual', 'Out of community — without accrual', 'Not sure'],
+      },
+      { name: 'Are you looking for spousal maintenance?', options: ['Yes', 'No', 'Not sure'] },
+    ],
+  },
+  {
+    match: 'Maintenance',
+    fields: [{ name: 'Is there an existing maintenance order? Give details' }],
+  },
+  {
+    match: 'Protection',
+    fields: [
+      { name: 'Your relationship to the other party' },
+      { name: 'Do you feel in immediate danger?', options: ['Yes', 'No'] },
+    ],
+  },
+  {
+    match: "Children's",
+    fields: [{ name: 'Current care / contact arrangement' }],
+  },
+];
+
 export function ContactSection() {
   const ref = useReveal();
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const sent = status === 'sent';
   const [consent, setConsent] = useState(false);
+  const [matterType, setMatterType] = useState('');
+  const [shareMode, setShareMode] = useState('consult'); // consult | now
+
+  const caseFields =
+    shareMode === 'now'
+      ? [
+          ...CASE_FIELDS_COMMON,
+          ...CASE_FIELDS_BY_TYPE.filter((g) => matterType.includes(g.match)).flatMap((g) => g.fields),
+        ]
+      : [];
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -524,8 +575,12 @@ export function ContactSection() {
       Province: fd.get('province'),
       'Income Bracket': fd.get('income'),
       Description: fd.get('description'),
+      'Case details': shareMode === 'now' ? 'Provided below' : 'Prefers to discuss in consultation',
       'POPIA Consent': 'Given',
     };
+    for (const [k, v] of fd.entries()) {
+      if (k.startsWith('CASE: ') && String(v).trim()) payload[k.slice(6)] = v;
+    }
     try {
       const res = await fetch(`https://formsubmit.co/ajax/${CONTACT.email}`, {
         method: 'POST',
@@ -574,7 +629,8 @@ export function ContactSection() {
         <p className="eyebrow reveal">Book a Consultation</p>
         <h2 className="section-title reveal d1">Tell me what you are facing.</h2>
         <p className="reveal d2" style={{ maxWidth: 640, lineHeight: 1.8 }}>
-          Send your enquiry below, or message directly on WhatsApp. You will hear back within one business day.
+          Send your enquiry below, or message directly on WhatsApp. You can expect a response within{' '}
+          <strong>1 to 2 working days</strong> — we will then discuss exactly what your matter needs.
         </p>
         <div
           className="reveal d3"
@@ -608,7 +664,10 @@ export function ContactSection() {
             <h3 className="serif" style={{ fontSize: '1.9rem', marginBottom: 14 }}>
               Thank you.
             </h3>
-            <p style={{ lineHeight: 1.8 }}>We will be in touch within one business day.</p>
+            <p style={{ lineHeight: 1.8 }}>
+              Your enquiry has been received. You can expect a response within 1 to 2 working days — we will then
+              discuss what your matter needs.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="reveal d4" style={{ display: 'grid', gap: 22 }}>
@@ -635,7 +694,13 @@ export function ContactSection() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 22 }}>
               <div>
                 <label style={labelStyle}>Matter Type *</label>
-                <select required style={inputStyle} name="matterType" defaultValue="">
+                <select
+                  required
+                  style={inputStyle}
+                  name="matterType"
+                  value={matterType}
+                  onChange={(e) => setMatterType(e.target.value)}
+                >
                   <option value="" disabled>
                     Select…
                   </option>
@@ -656,6 +721,68 @@ export function ContactSection() {
                 </select>
               </div>
             </div>
+            {matterType && (
+              <div
+                style={{
+                  background: 'var(--white)',
+                  border: '1px solid var(--creamdark)',
+                  borderRadius: 4,
+                  padding: '22px 24px',
+                }}
+              >
+                <p style={{ ...labelStyle, marginBottom: 12 }}>Case Details (your choice)</p>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer', marginBottom: 8 }}>
+                  <input
+                    type="radio"
+                    name="shareMode"
+                    checked={shareMode === 'consult'}
+                    onChange={() => setShareMode('consult')}
+                    style={{ accentColor: 'var(--copper)' }}
+                  />
+                  <span>I prefer to discuss everything in the consultation</span>
+                </label>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="shareMode"
+                    checked={shareMode === 'now'}
+                    onChange={() => setShareMode('now')}
+                    style={{ accentColor: 'var(--copper)' }}
+                  />
+                  <span>I'd like to share some details now (all fields optional)</span>
+                </label>
+
+                {caseFields.length > 0 && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                      gap: 18,
+                      marginTop: 22,
+                    }}
+                  >
+                    {caseFields.map((f) => (
+                      <div key={f.name}>
+                        <label style={{ ...labelStyle, textTransform: 'none', letterSpacing: 0, fontSize: '0.85rem' }}>
+                          {f.name}
+                        </label>
+                        {f.options ? (
+                          <select style={inputStyle} name={`CASE: ${f.name}`} defaultValue="">
+                            <option value="">Select…</option>
+                            {f.options.map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input type={f.type || 'text'} style={inputStyle} name={`CASE: ${f.name}`} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label style={labelStyle}>Monthly Household Income (optional)</label>
               <select style={inputStyle} name="income" defaultValue="Prefer not to say">

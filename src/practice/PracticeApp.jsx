@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import VWLogo from '../components/VWLogo';
+import ClientProfile from './ClientProfile';
+import { getTemplates, TEMPLATE_CATEGORIES } from './templates';
+import {
+  STAGES, QUOTE_STATUS, R, uid, today, quoteTotal,
+  card, input, label, btn, btnGhost, tag, STAGE_COLORS, PrintHeader,
+} from './ui';
 import { MATTER_TYPES, PROVINCES, DISCLAIMER } from '../constants/data';
 
 /*
- * Van Wyk Practice Manager — private CRM, pricing and quoting suite.
- * All data lives in THIS browser's localStorage. Nothing is sent to any
- * server, which is why it costs nothing and belongs entirely to the owner.
- * The Backup tab exports everything to a JSON file — back up regularly.
+ * Van Wyk Practice Manager — private CRM, client files, pricing, quoting,
+ * compliance forms, document templates and income ledger. All data lives in
+ * THIS browser's localStorage; nothing is sent to any server. Back up weekly
+ * from the Settings tab.
  */
 
 const STORE_KEY = 'vwfla_practice_v1';
-
-const STAGES = ['Enquiry', 'Consult Booked', 'Quote Sent', 'Paid — Active', 'Completed', 'Referred Out'];
-const QUOTE_STATUS = ['Draft', 'Sent', 'Accepted', 'Paid', 'Declined'];
 
 const DEFAULT_PRICES = [
   { id: 'p1', name: 'Intake Consultation (60 min)', price: 650 },
@@ -42,7 +45,7 @@ function load() {
     settings: {
       ownerName: 'Van Wyk Family Law Advisory',
       email: 'vanwykruchel@gmail.com',
-      phone: '',
+      phone: '060 702 3765',
       bankName: '',
       accName: '',
       accNo: '',
@@ -58,69 +61,6 @@ function load() {
 function persist(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
 }
-
-const R = (n) => 'R ' + Number(n || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 });
-const uid = () => Math.random().toString(36).slice(2, 10);
-const today = () => new Date().toISOString().slice(0, 10);
-
-/* ------- shared styles ------- */
-const card = {
-  background: 'var(--white)',
-  border: '1px solid var(--creamdark)',
-  borderRadius: 6,
-  padding: 22,
-};
-const input = {
-  width: '100%',
-  padding: '10px 12px',
-  border: '1px solid var(--creamdark)',
-  borderRadius: 4,
-  background: '#fff',
-  fontSize: '0.95rem',
-};
-const label = {
-  fontSize: '0.72rem',
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase',
-  fontWeight: 600,
-  color: 'var(--forest)',
-  display: 'block',
-  marginBottom: 5,
-};
-const btn = {
-  background: 'var(--copper)',
-  color: '#fff',
-  border: 'none',
-  borderRadius: 4,
-  padding: '10px 20px',
-  fontWeight: 600,
-  fontSize: '0.85rem',
-  letterSpacing: '0.06em',
-};
-const btnGhost = {
-  ...btn,
-  background: 'transparent',
-  color: 'var(--forest)',
-  border: '1px solid var(--creamdark)',
-};
-const tag = (bg, fg) => ({
-  display: 'inline-block',
-  padding: '3px 10px',
-  borderRadius: 20,
-  fontSize: '0.72rem',
-  fontWeight: 600,
-  background: bg,
-  color: fg,
-});
-
-const STAGE_COLORS = {
-  Enquiry: ['#eef3f0', '#2D4A3E'],
-  'Consult Booked': ['#fdf3ec', '#B5714A'],
-  'Quote Sent': ['#fbeede', '#9a5c38'],
-  'Paid — Active': ['#e7f0e9', '#1d6b3a'],
-  Completed: ['#e9e9e9', '#555'],
-  'Referred Out': ['#f3e9f0', '#7a4a6b'],
-};
 
 /* ================= PIN GATE ================= */
 function PinGate({ data, setData, onUnlock }) {
@@ -148,37 +88,18 @@ function PinGate({ data, setData, onUnlock }) {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cream)', padding: 24 }}>
       <form onSubmit={submit} style={{ ...card, maxWidth: 380, width: '100%', textAlign: 'center', padding: 40 }}>
         <VWLogo size={80} />
-        <h1 className="serif" style={{ fontSize: '1.6rem', margin: '18px 0 6px' }}>
-          Practice Manager
-        </h1>
+        <h1 className="serif" style={{ fontSize: '1.6rem', margin: '18px 0 6px' }}>Practice Manager</h1>
         <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 24 }}>
           {setup ? 'Create a PIN to protect this device.' : 'Enter your PIN to continue.'}
         </p>
-        <input
-          type="password"
-          inputMode="numeric"
-          placeholder="PIN"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          style={{ ...input, textAlign: 'center', letterSpacing: '0.4em', marginBottom: 12 }}
-          autoFocus
-        />
+        <input type="password" inputMode="numeric" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...input, textAlign: 'center', letterSpacing: '0.4em', marginBottom: 12 }} autoFocus />
         {setup && (
-          <input
-            type="password"
-            inputMode="numeric"
-            placeholder="Confirm PIN"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            style={{ ...input, textAlign: 'center', letterSpacing: '0.4em', marginBottom: 12 }}
-          />
+          <input type="password" inputMode="numeric" placeholder="Confirm PIN" value={confirm} onChange={(e) => setConfirm(e.target.value)} style={{ ...input, textAlign: 'center', letterSpacing: '0.4em', marginBottom: 12 }} />
         )}
         {err && <p style={{ color: '#a33', fontSize: '0.85rem', marginBottom: 10 }}>{err}</p>}
-        <button type="submit" style={{ ...btn, width: '100%' }}>
-          {setup ? 'Create PIN' : 'Unlock'}
-        </button>
+        <button type="submit" style={{ ...btn, width: '100%' }}>{setup ? 'Create PIN' : 'Unlock'}</button>
         <p style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 18, lineHeight: 1.6 }}>
-          Your data is stored only in this browser on this computer. Use the Backup tab regularly.
+          Your data is stored only in this browser on this computer. Use the Backup in Settings regularly.
         </p>
       </form>
     </div>
@@ -191,11 +112,16 @@ function Dashboard({ data }) {
     const open = data.clients.filter((c) => !['Completed', 'Referred Out'].includes(c.stage)).length;
     const quotesSent = data.quotes.filter((q) => q.status === 'Sent').length;
     const paid = data.quotes.filter((q) => q.status === 'Paid');
-    const income = paid.reduce((s, q) => s + q.items.reduce((a, i) => a + i.price * (i.qty || 1), 0), 0);
+    const income = paid.reduce((s, q) => s + quoteTotal(q), 0);
     const thisMonth = paid
       .filter((q) => (q.paidDate || q.created).slice(0, 7) === today().slice(0, 7))
-      .reduce((s, q) => s + q.items.reduce((a, i) => a + i.price * (i.qty || 1), 0), 0);
-    return { open, quotesSent, income, thisMonth };
+      .reduce((s, q) => s + quoteTotal(q), 0);
+    const formsOutstanding = data.clients.reduce((n, c) => {
+      const f = c.forms || {};
+      const signedCount = ['popia', 'disclosure', 'indemnity', 'contract'].filter((k) => f[k]?.status === 'Signed').length;
+      return n + (['Paid — Active'].includes(c.stage) && signedCount < 4 ? 1 : 0);
+    }, 0);
+    return { open, quotesSent, income, thisMonth, formsOutstanding };
   }, [data]);
 
   const boxes = [
@@ -203,6 +129,7 @@ function Dashboard({ data }) {
     ['Quotes awaiting answer', stats.quotesSent],
     ['Income this month', R(stats.thisMonth)],
     ['Income all time', R(stats.income)],
+    ['Active clients missing signed forms', stats.formsOutstanding],
   ];
 
   return (
@@ -219,11 +146,7 @@ function Dashboard({ data }) {
           {STAGES.map((s) => {
             const n = data.clients.filter((c) => c.stage === s).length;
             const [bg, fg] = STAGE_COLORS[s];
-            return (
-              <span key={s} style={tag(bg, fg)}>
-                {s}: {n}
-              </span>
-            );
+            return <span key={s} style={tag(bg, fg)}>{s}: {n}</span>;
           })}
         </div>
       </div>
@@ -231,33 +154,33 @@ function Dashboard({ data }) {
   );
 }
 
-/* ================= CLIENTS ================= */
-function Clients({ data, update }) {
-  const [editing, setEditing] = useState(null);
+/* ================= CLIENTS (list + profile) ================= */
+function Clients({ data, update, onNewQuote }) {
+  const [openId, setOpenId] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
+  const [draft, setDraft] = useState(null);
 
-  const empty = {
-    id: '',
-    name: '',
-    email: '',
-    phone: '',
-    province: PROVINCES[2],
-    matterType: MATTER_TYPES[0],
-    stage: STAGES[0],
-    notes: '',
-    created: today(),
-  };
+  const openClient = data.clients.find((c) => c.id === openId);
 
-  function save(c) {
-    const clients = c.id
-      ? data.clients.map((x) => (x.id === c.id ? c : x))
-      : [...data.clients, { ...c, id: uid() }];
-    update({ clients });
-    setEditing(null);
+  if (openClient) {
+    return <ClientProfile client={openClient} data={data} update={update} onBack={() => setOpenId(null)} onNewQuote={onNewQuote} />;
+  }
+
+  function startAdd() {
+    setDraft({ name: '', email: '', phone: '', province: PROVINCES[2], matterType: MATTER_TYPES[0], stage: STAGES[0], notes: '', created: today() });
+    setAdding(true);
+  }
+
+  function saveNew() {
+    const c = { ...draft, id: uid(), activities: [], documents: [], forms: {}, case: {} };
+    update({ clients: [...data.clients, c] });
+    setAdding(false);
+    setOpenId(c.id);
   }
 
   function remove(id) {
-    if (!window.confirm('Delete this client and their record? This cannot be undone.')) return;
+    if (!window.confirm('Delete this client and their entire file? This cannot be undone.')) return;
     update({ clients: data.clients.filter((c) => c.id !== id) });
   }
 
@@ -265,51 +188,34 @@ function Clients({ data, update }) {
     .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (a.created < b.created ? 1 : -1));
 
-  if (editing)
+  if (adding)
     return (
-      <div style={{ ...card, maxWidth: 640 }}>
-        <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 18 }}>
-          {editing.id ? 'Edit Client' : 'New Client'}
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Full Name</label>
-            <input style={input} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+      <div style={{ ...card, maxWidth: 560 }}>
+        <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 16 }}>New Client</h3>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div><label style={label}>Full name *</label><input style={input} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} autoFocus /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={label}>Email</label><input style={input} value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></div>
+            <div><label style={label}>Phone</label><input style={input} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></div>
           </div>
-          <div>
-            <label style={label}>Email</label>
-            <input style={input} value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
-          </div>
-          <div>
-            <label style={label}>Phone / WhatsApp</label>
-            <input style={input} value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} />
-          </div>
-          <div>
-            <label style={label}>Province</label>
-            <select style={input} value={editing.province} onChange={(e) => setEditing({ ...editing, province: e.target.value })}>
-              {PROVINCES.map((p) => <option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={label}>Matter Type</label>
-            <select style={input} value={editing.matterType} onChange={(e) => setEditing({ ...editing, matterType: e.target.value })}>
-              {MATTER_TYPES.map((m) => <option key={m}>{m}</option>)}
-            </select>
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Stage</label>
-            <select style={input} value={editing.stage} onChange={(e) => setEditing({ ...editing, stage: e.target.value })}>
-              {STAGES.map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Notes</label>
-            <textarea rows={4} style={{ ...input, resize: 'vertical' }} value={editing.notes} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={label}>Province</label>
+              <select style={input} value={draft.province} onChange={(e) => setDraft({ ...draft, province: e.target.value })}>
+                {PROVINCES.map((p) => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={label}>Matter type</label>
+              <select style={input} value={draft.matterType} onChange={(e) => setDraft({ ...draft, matterType: e.target.value })}>
+                {MATTER_TYPES.map((m) => <option key={m}>{m}</option>)}
+              </select>
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button style={btn} onClick={() => save(editing)} disabled={!editing.name}>Save</button>
-          <button style={btnGhost} onClick={() => setEditing(null)}>Cancel</button>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <button style={btn} onClick={saveNew} disabled={!draft.name.trim()}>Create Client File</button>
+          <button style={btnGhost} onClick={() => setAdding(false)}>Cancel</button>
         </div>
       </div>
     );
@@ -318,25 +224,25 @@ function Clients({ data, update }) {
     <div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <input style={{ ...input, maxWidth: 280 }} placeholder="Search clients…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <button style={btn} onClick={() => setEditing(empty)}>+ New Client</button>
+        <button style={btn} onClick={startAdd}>+ New Client</button>
       </div>
       <div style={{ display: 'grid', gap: 12 }}>
-        {list.length === 0 && <p style={{ color: 'var(--muted)' }}>No clients yet. Every enquiry from the website goes here.</p>}
+        {list.length === 0 && <p style={{ color: 'var(--muted)' }}>No clients yet. Every enquiry from the website starts a file here.</p>}
         {list.map((c) => {
           const [bg, fg] = STAGE_COLORS[c.stage] || ['#eee', '#333'];
+          const signed = ['popia', 'disclosure', 'indemnity', 'contract'].filter((k) => c.forms?.[k]?.status === 'Signed').length;
           return (
             <div key={c.id} style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div>
+              <div style={{ cursor: 'pointer' }} onClick={() => setOpenId(c.id)}>
                 <strong style={{ color: 'var(--forest)', fontSize: '1.05rem' }}>{c.name}</strong>
                 <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 3 }}>
-                  {c.matterType} · {c.province} · {c.phone || c.email || 'no contact'}
+                  {c.matterType} · {c.province} · forms signed: {signed}/4
                 </p>
-                {c.notes && <p style={{ fontSize: '0.85rem', marginTop: 6, maxWidth: 520 }}>{c.notes}</p>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={tag(bg, fg)}>{c.stage}</span>
-                <button style={btnGhost} onClick={() => setEditing(c)}>Edit</button>
-                <button style={{ ...btnGhost, color: '#a33' }} onClick={() => remove(c.id)}>Delete</button>
+                <button style={btn} onClick={() => setOpenId(c.id)}>Open File</button>
+                <button style={{ ...btnGhost, color: '#a33', padding: '6px 10px' }} onClick={() => remove(c.id)}>✕</button>
               </div>
             </div>
           );
@@ -350,10 +256,6 @@ function Clients({ data, update }) {
 function Pricing({ data, update }) {
   const [items, setItems] = useState(data.prices);
 
-  function commit() {
-    update({ prices: items.filter((i) => i.name.trim()) });
-  }
-
   return (
     <div style={{ ...card, maxWidth: 760 }}>
       <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 6 }}>Services, Prices & Bundles</h3>
@@ -363,49 +265,37 @@ function Pricing({ data, update }) {
       <div style={{ display: 'grid', gap: 10 }}>
         {items.map((p, i) => (
           <div key={p.id} style={{ display: 'flex', gap: 10 }}>
-            <input
-              style={{ ...input, flex: 3 }}
-              value={p.name}
-              onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
-            />
-            <input
-              type="number"
-              style={{ ...input, flex: 1, maxWidth: 130 }}
-              value={p.price}
-              onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, price: Number(e.target.value) } : x)))}
-            />
-            <button style={{ ...btnGhost, color: '#a33', padding: '6px 12px' }} onClick={() => setItems(items.filter((_, j) => j !== i))}>
-              ✕
-            </button>
+            <input style={{ ...input, flex: 3 }} value={p.name} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+            <input type="number" style={{ ...input, flex: 1, maxWidth: 130 }} value={p.price} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, price: Number(e.target.value) } : x)))} />
+            <button style={{ ...btnGhost, color: '#a33', padding: '6px 12px' }} onClick={() => setItems(items.filter((_, j) => j !== i))}>✕</button>
           </div>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
         <button style={btnGhost} onClick={() => setItems([...items, { id: uid(), name: '', price: 0 }])}>+ Add item</button>
-        <button style={btn} onClick={commit}>Save Price List</button>
+        <button style={btn} onClick={() => update({ prices: items.filter((i) => i.name.trim()) })}>Save Price List</button>
       </div>
     </div>
   );
 }
 
 /* ================= QUOTES ================= */
-function Quotes({ data, update }) {
+function Quotes({ data, update, newFor, clearNewFor }) {
   const [editing, setEditing] = useState(null);
   const [printQuote, setPrintQuote] = useState(null);
 
   const nextNumber = () => `VW-${new Date().getFullYear()}-${String(data.quotes.length + 1).padStart(3, '0')}`;
 
+  useEffect(() => {
+    if (newFor) {
+      setEditing({ id: '', number: nextNumber(), clientId: newFor, items: [], status: 'Draft', created: today(), paidDate: '', notes: '' });
+      clearNewFor();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newFor]);
+
   function newQuote() {
-    setEditing({
-      id: '',
-      number: nextNumber(),
-      clientId: data.clients[0]?.id || '',
-      items: [],
-      status: 'Draft',
-      created: today(),
-      paidDate: '',
-      notes: '',
-    });
+    setEditing({ id: '', number: nextNumber(), clientId: data.clients[0]?.id || '', items: [], status: 'Draft', created: today(), paidDate: '', notes: '' });
   }
 
   function save(q) {
@@ -427,11 +317,10 @@ function Quotes({ data, update }) {
     }, 150);
   }
 
-  const total = (q) => q.items.reduce((s, i) => s + i.price * (i.qty || 1), 0);
   const clientOf = (q) => data.clients.find((c) => c.id === q.clientId);
 
   if (editing) {
-    const t = total(editing);
+    const t = quoteTotal(editing);
     return (
       <div style={{ ...card, maxWidth: 720 }}>
         <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 18 }}>
@@ -475,9 +364,7 @@ function Quotes({ data, update }) {
             <label style={label}>Notes on quote (optional)</label>
             <textarea rows={2} style={{ ...input, resize: 'vertical', marginBottom: 14 }} value={editing.notes} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} />
 
-            <p className="serif" style={{ fontSize: '1.4rem', color: 'var(--forest)', fontWeight: 700, marginBottom: 16 }}>
-              Total: {R(t)}
-            </p>
+            <p className="serif" style={{ fontSize: '1.4rem', color: 'var(--forest)', fontWeight: 700, marginBottom: 16 }}>Total: {R(t)}</p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button style={btn} onClick={() => save(editing)} disabled={!editing.clientId || editing.items.length === 0}>Save Quote</button>
               <button style={btnGhost} onClick={() => setEditing(null)}>Cancel</button>
@@ -501,7 +388,7 @@ function Quotes({ data, update }) {
                 <strong style={{ color: 'var(--forest)' }}>{q.number}</strong>
                 <span style={{ color: 'var(--muted)' }}> — {c ? c.name : 'Unknown client'}</span>
                 <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 3 }}>
-                  {q.created} · {q.items.length} item(s) · <strong style={{ color: 'var(--forest)' }}>{R(total(q))}</strong>
+                  {q.created} · {q.items.length} item(s) · <strong style={{ color: 'var(--forest)' }}>{R(quoteTotal(q))}</strong>
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -516,42 +403,28 @@ function Quotes({ data, update }) {
         })}
       </div>
 
-      {printQuote && <PrintableQuote quote={printQuote} client={clientOf(printQuote)} settings={data.settings} total={total(printQuote)} />}
+      {printQuote && <PrintableQuote quote={printQuote} client={clientOf(printQuote)} settings={data.settings} total={quoteTotal(printQuote)} />}
     </div>
   );
 }
 
-/* ------- the printable, branded quote document ------- */
 function PrintableQuote({ quote, client, settings, total }) {
   const validUntil = new Date(Date.now() + (settings.quoteValidityDays || 14) * 86400000).toISOString().slice(0, 10);
   return (
     <div id="print-quote" style={{ background: '#fff', color: '#222', padding: '40px 48px', fontFamily: 'Raleway, sans-serif', fontSize: '13px', lineHeight: 1.6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #B5714A', paddingBottom: 20, marginBottom: 24 }}>
+      <PrintHeader title="FIXED-FEE QUOTE" settings={settings} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <VWLogo size={90} />
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', color: '#2D4A3E', fontSize: '26px', margin: 0 }}>FIXED-FEE QUOTE</h1>
-          <p style={{ margin: '6px 0 0' }}><strong>{quote.number}</strong></p>
-          <p style={{ margin: 0 }}>Date: {quote.created}</p>
-          <p style={{ margin: 0 }}>Valid until: {validUntil}</p>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 26 }}>
-        <div>
-          <p style={{ fontWeight: 700, color: '#2D4A3E', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.1em' }}>From</p>
-          <p style={{ margin: 0 }}>{settings.ownerName}</p>
-          <p style={{ margin: 0 }}>Family Law Consultant (LLB, UNISA)</p>
-          <p style={{ margin: 0 }}>{settings.email}</p>
-          {settings.phone && <p style={{ margin: 0 }}>{settings.phone}</p>}
-        </div>
-        <div style={{ textAlign: 'right' }}>
           <p style={{ fontWeight: 700, color: '#2D4A3E', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.1em' }}>For</p>
           <p style={{ margin: 0 }}>{client?.name || ''}</p>
           {client?.email && <p style={{ margin: 0 }}>{client.email}</p>}
           {client?.phone && <p style={{ margin: 0 }}>{client.phone}</p>}
           {client?.province && <p style={{ margin: 0 }}>{client.province}</p>}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ margin: 0 }}><strong>{quote.number}</strong></p>
+          <p style={{ margin: 0 }}>Date: {quote.created}</p>
+          <p style={{ margin: 0 }}>Valid until: {validUntil}</p>
         </div>
       </div>
 
@@ -596,14 +469,104 @@ function PrintableQuote({ quote, client, settings, total }) {
   );
 }
 
+/* ================= TEMPLATES LIBRARY ================= */
+function Templates({ data }) {
+  const templates = getTemplates();
+  const [category, setCategory] = useState('Compliance');
+  const [selectedId, setSelectedId] = useState(null);
+  const [clientId, setClientId] = useState('');
+  const [printing, setPrinting] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const selected = templates.find((t) => t.id === selectedId);
+  const client = data.clients.find((c) => c.id === clientId) || null;
+  const text = selected ? selected.body(client, data.settings) : '';
+
+  function doPrint() {
+    setPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setPrinting(false);
+    }, 150);
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  }
+
+  return (
+    <div>
+      <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 16, maxWidth: 700, lineHeight: 1.7 }}>
+        Working drafts for every matter type. Pick a client and the template fills in their details automatically.
+        Review and adapt every document before it goes out — these are starting points, not final advice.
+      </p>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+        {TEMPLATE_CATEGORIES.map((c) => (
+          <button
+            key={c}
+            onClick={() => { setCategory(c); setSelectedId(null); }}
+            style={{ ...btnGhost, padding: '7px 14px', background: category === c ? 'var(--forest)' : 'transparent', color: category === c ? '#fff' : 'var(--forest)' }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 300px) 1fr', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {templates.filter((t) => t.category === category).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setSelectedId(t.id)}
+              style={{ ...btnGhost, textAlign: 'left', background: selectedId === t.id ? 'var(--copper)' : 'var(--white)', color: selectedId === t.id ? '#fff' : 'var(--forest)' }}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+
+        <div style={card}>
+          {!selected ? (
+            <p style={{ color: 'var(--muted)' }}>Select a template on the left.</p>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+                <select style={{ ...input, width: 'auto', minWidth: 200 }} value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                  <option value="">No client — blank template</option>
+                  {data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button style={btn} onClick={doPrint}>Print / PDF</button>
+                <button style={btnGhost} onClick={copy}>{copied ? 'Copied ✓' : 'Copy text'}</button>
+              </div>
+              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'Raleway, sans-serif', fontSize: '0.86rem', lineHeight: 1.7, background: 'var(--cream)', padding: 18, borderRadius: 4, maxHeight: 520, overflowY: 'auto' }}>
+                {text}
+              </pre>
+            </>
+          )}
+        </div>
+      </div>
+
+      {printing && selected && (
+        <div id="print-quote" style={{ background: '#fff', color: '#222', padding: '36px 44px', fontFamily: 'Raleway, sans-serif', fontSize: '12.5px', lineHeight: 1.65 }}>
+          <PrintHeader title={selected.name} settings={data.settings} />
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{text}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ================= INCOME ================= */
 function Income({ data }) {
   const paid = data.quotes.filter((q) => q.status === 'Paid');
   const byMonth = {};
   paid.forEach((q) => {
     const m = (q.paidDate || q.created).slice(0, 7);
-    const t = q.items.reduce((s, i) => s + i.price * (i.qty || 1), 0);
-    byMonth[m] = (byMonth[m] || 0) + t;
+    byMonth[m] = (byMonth[m] || 0) + quoteTotal(q);
   });
   const months = Object.keys(byMonth).sort().reverse();
   const grand = months.reduce((s, m) => s + byMonth[m], 0);
@@ -677,7 +640,7 @@ function Settings({ data, update }) {
       <div style={card}>
         <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 14 }}>Business & Banking Details</h3>
         <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 16 }}>
-          These appear on every quote you print. Banking details only ever leave this computer on the quotes you choose to send.
+          These appear on every quote, statement and document you print.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {fields.map(([k, lbl]) => (
@@ -716,12 +679,13 @@ function Settings({ data, update }) {
 }
 
 /* ================= SHELL ================= */
-const TABS = ['Dashboard', 'Clients', 'Quotes', 'Pricing', 'Income', 'Settings'];
+const TABS = ['Dashboard', 'Clients', 'Quotes', 'Templates', 'Pricing', 'Income', 'Settings'];
 
 export default function PracticeApp() {
   const [data, setData] = useState(load);
   const [unlocked, setUnlocked] = useState(false);
   const [tab, setTab] = useState('Dashboard');
+  const [newQuoteFor, setNewQuoteFor] = useState(null);
 
   useEffect(() => {
     persist(data);
@@ -731,13 +695,21 @@ export default function PracticeApp() {
     setData((d) => ({ ...d, ...patch }));
   }
 
+  function handleNewQuote(clientId) {
+    setNewQuoteFor(clientId);
+    setTab('Quotes');
+  }
+
   if (!unlocked) return <PinGate data={data} setData={setData} onUnlock={() => setUnlocked(true)} />;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 24px 80px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 22 }}>
-          <h1 className="serif" style={{ fontSize: '1.9rem' }}>Practice Manager</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <VWLogo size={44} showText={false} />
+            <h1 className="serif" style={{ fontSize: '1.9rem' }}>Practice Manager</h1>
+          </div>
           <a href="#/" style={{ color: 'var(--copper)', fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.08em' }}>
             ← Back to website
           </a>
@@ -759,8 +731,9 @@ export default function PracticeApp() {
           ))}
         </div>
         {tab === 'Dashboard' && <Dashboard data={data} />}
-        {tab === 'Clients' && <Clients data={data} update={update} />}
-        {tab === 'Quotes' && <Quotes data={data} update={update} />}
+        {tab === 'Clients' && <Clients data={data} update={update} onNewQuote={handleNewQuote} />}
+        {tab === 'Quotes' && <Quotes data={data} update={update} newFor={newQuoteFor} clearNewFor={() => setNewQuoteFor(null)} />}
+        {tab === 'Templates' && <Templates data={data} />}
         {tab === 'Pricing' && <Pricing data={data} update={update} />}
         {tab === 'Income' && <Income data={data} />}
         {tab === 'Settings' && <Settings data={data} update={update} />}

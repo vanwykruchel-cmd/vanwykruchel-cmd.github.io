@@ -54,7 +54,7 @@ function Nav({ scrolled, onNavigate }) {
           }}
           style={{ display: 'flex', alignItems: 'center', gap: 12 }}
         >
-          <VWLogo size={46} showText={false} />
+          <VWLogo size={46} showText={false} light={!scrolled} />
           <div>
             <div
               className="serif"
@@ -62,7 +62,7 @@ function Nav({ scrolled, onNavigate }) {
                 fontWeight: 700,
                 fontSize: '1.1rem',
                 letterSpacing: '0.16em',
-                color: 'var(--forest)',
+                color: scrolled ? 'var(--forest)' : 'var(--cream)',
               }}
             >
               VAN WYK
@@ -95,7 +95,7 @@ function Nav({ scrolled, onNavigate }) {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 fontWeight: 500,
-                color: 'var(--forest)',
+                color: scrolled ? 'var(--forest)' : 'var(--cream)',
               }}
             >
               {l.label}
@@ -130,7 +130,7 @@ function Nav({ scrolled, onNavigate }) {
               style={{
                 width: 24,
                 height: 2,
-                background: 'var(--forest)',
+                background: scrolled ? 'var(--forest)' : 'var(--cream)',
                 display: 'block',
                 transition: 'transform 0.3s, opacity 0.3s',
                 transform: menuOpen
@@ -227,34 +227,13 @@ function Leaf({ top, left, right, delay, duration, size = 16 }) {
   );
 }
 
-const LOGO_CANDIDATES = ['logo.png', 'logo.jpg', 'logo.jpeg'];
-
-function HeroLogo() {
-  const [idx, setIdx] = useState(0);
-  if (idx < LOGO_CANDIDATES.length) {
-    return (
-      <img
-        src={`${import.meta.env.BASE_URL}${LOGO_CANDIDATES[idx]}`}
-        alt="Van Wyk Family Law Advisory"
-        onError={() => setIdx(idx + 1)}
-        style={{
-          width: 'min(560px, 88vw)',
-          mixBlendMode: 'multiply',
-          animation: 'fadeUp 1.4s ease both',
-        }}
-      />
-    );
-  }
-  return <VWLogo size={170} draw />;
-}
-
 function Hero({ scrollY, onNavigate }) {
   return (
     <header
       style={{
         position: 'relative',
         minHeight: '100vh',
-        background: 'radial-gradient(ellipse at 50% 38%, var(--white) 0%, var(--cream) 55%, var(--creamdark) 100%)',
+        background: 'radial-gradient(ellipse at 50% 30%, var(--lightgreen) 0%, var(--forest) 45%, var(--darkgreen) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -276,10 +255,11 @@ function Hero({ scrollY, onNavigate }) {
           opacity: Math.max(0, 1 - scrollY / 520),
         }}
       >
-        <HeroLogo />
+        <VWLogo size={170} light draw />
         <h1
           style={{
-            fontSize: 'clamp(2rem, 5vw, 3.4rem)',
+            color: 'var(--cream)',
+            fontSize: 'clamp(2.2rem, 5.5vw, 4rem)',
             lineHeight: 1.12,
             marginTop: 26,
             animation: 'fadeUp 1s ease 1.1s both',
@@ -289,7 +269,7 @@ function Hero({ scrollY, onNavigate }) {
         </h1>
         <p
           style={{
-            color: 'var(--mid)',
+            color: 'rgba(247,243,236,0.82)',
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             lineHeight: 1.8,
             maxWidth: 640,
@@ -313,13 +293,13 @@ function Hero({ scrollY, onNavigate }) {
           <button className="btn-copper" onClick={() => onNavigate('contact')}>
             Book a Consultation
           </button>
-          <button className="btn-outline-dark" onClick={() => onNavigate('services')}>
+          <button className="btn-outline" onClick={() => onNavigate('services')}>
             Explore Services
           </button>
         </div>
         <p
           style={{
-            color: 'var(--muted)',
+            color: 'rgba(247,243,236,0.55)',
             fontSize: '0.8rem',
             letterSpacing: '0.08em',
             marginTop: 42,
