@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import VWLogo from './components/VWLogo';
 import {
   GapSection,
@@ -10,6 +10,7 @@ import {
   ContactSection,
 } from './components/HomeSections';
 import { PrivacyPage, TermsPage } from './components/LegalPages';
+import PracticeApp from './practice/PracticeApp';
 import { CONTACT, DISCLAIMER } from './constants/data';
 
 const NAV_LINKS = [
@@ -53,7 +54,7 @@ function Nav({ scrolled, onNavigate }) {
           }}
           style={{ display: 'flex', alignItems: 'center', gap: 12 }}
         >
-          <VWLogo size={46} showText={false} light={!scrolled} />
+          <VWLogo size={46} showText={false} />
           <div>
             <div
               className="serif"
@@ -61,7 +62,7 @@ function Nav({ scrolled, onNavigate }) {
                 fontWeight: 700,
                 fontSize: '1.1rem',
                 letterSpacing: '0.16em',
-                color: scrolled ? 'var(--forest)' : 'var(--cream)',
+                color: 'var(--forest)',
               }}
             >
               VAN WYK
@@ -94,7 +95,7 @@ function Nav({ scrolled, onNavigate }) {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 fontWeight: 500,
-                color: scrolled ? 'var(--forest)' : 'var(--cream)',
+                color: 'var(--forest)',
               }}
             >
               {l.label}
@@ -129,7 +130,7 @@ function Nav({ scrolled, onNavigate }) {
               style={{
                 width: 24,
                 height: 2,
-                background: scrolled ? 'var(--forest)' : 'var(--cream)',
+                background: 'var(--forest)',
                 display: 'block',
                 transition: 'transform 0.3s, opacity 0.3s',
                 transform: menuOpen
@@ -226,13 +227,32 @@ function Leaf({ top, left, right, delay, duration, size = 16 }) {
   );
 }
 
+function HeroLogo() {
+  const [usePng, setUsePng] = useState(true);
+  if (usePng) {
+    return (
+      <img
+        src={`${import.meta.env.BASE_URL}logo.png`}
+        alt="Van Wyk Family Law Advisory"
+        onError={() => setUsePng(false)}
+        style={{
+          width: 'min(460px, 82vw)',
+          mixBlendMode: 'multiply',
+          animation: 'fadeUp 1.4s ease both',
+        }}
+      />
+    );
+  }
+  return <VWLogo size={170} draw />;
+}
+
 function Hero({ scrollY, onNavigate }) {
   return (
     <header
       style={{
         position: 'relative',
         minHeight: '100vh',
-        background: 'radial-gradient(ellipse at 50% 30%, var(--lightgreen) 0%, var(--forest) 45%, var(--darkgreen) 100%)',
+        background: 'radial-gradient(ellipse at 50% 38%, var(--white) 0%, var(--cream) 55%, var(--creamdark) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -248,21 +268,18 @@ function Hero({ scrollY, onNavigate }) {
           position: 'relative',
           zIndex: 2,
           textAlign: 'center',
-          padding: '120px 24px 80px',
+          padding: '110px 24px 80px',
           maxWidth: 880,
           transform: `translateY(${scrollY * 0.3}px)`,
           opacity: Math.max(0, 1 - scrollY / 520),
         }}
       >
-        <div>
-          <VWLogo size={170} light draw />
-        </div>
+        <HeroLogo />
         <h1
           style={{
-            color: 'var(--cream)',
-            fontSize: 'clamp(2.2rem, 5.5vw, 4rem)',
+            fontSize: 'clamp(2rem, 5vw, 3.4rem)',
             lineHeight: 1.12,
-            marginTop: 30,
+            marginTop: 26,
             animation: 'fadeUp 1s ease 1.1s both',
           }}
         >
@@ -270,15 +287,15 @@ function Hero({ scrollY, onNavigate }) {
         </h1>
         <p
           style={{
-            color: 'rgba(247,243,236,0.82)',
+            color: 'var(--mid)',
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             lineHeight: 1.8,
             maxWidth: 640,
-            margin: '26px auto 0',
+            margin: '24px auto 0',
             animation: 'fadeUp 1s ease 1.5s both',
           }}
         >
-          Specialist divorce, maintenance, children's court and protection order guidance — online, nationwide,
+          Specialist divorce, maintenance, children's court and protection order guidance â€” online, nationwide,
           at a fixed fee you agree to in writing before any work begins.
         </p>
         <div
@@ -287,27 +304,27 @@ function Hero({ scrollY, onNavigate }) {
             gap: 16,
             justifyContent: 'center',
             flexWrap: 'wrap',
-            marginTop: 38,
+            marginTop: 36,
             animation: 'fadeUp 1s ease 1.9s both',
           }}
         >
           <button className="btn-copper" onClick={() => onNavigate('contact')}>
             Book a Consultation
           </button>
-          <button className="btn-outline" onClick={() => onNavigate('services')}>
+          <button className="btn-outline-dark" onClick={() => onNavigate('services')}>
             Explore Services
           </button>
         </div>
         <p
           style={{
-            color: 'rgba(247,243,236,0.55)',
+            color: 'var(--muted)',
             fontSize: '0.8rem',
             letterSpacing: '0.08em',
-            marginTop: 44,
+            marginTop: 42,
             animation: 'fadeUp 1s ease 2.3s both',
           }}
         >
-          Family Law Consultant (LLB, UNISA) · Legal consultancy — not a law firm · All nine provinces
+          Family Law Consultant (LLB, UNISA) Â· Legal consultancy â€” not a law firm Â· All nine provinces
         </p>
       </div>
     </header>
@@ -330,7 +347,7 @@ function Footer({ onNavigate }) {
           <div>
             <VWLogo size={80} light />
             <p style={{ color: 'rgba(247,243,236,0.6)', lineHeight: 1.75, marginTop: 16, fontSize: '0.92rem' }}>
-              Specialist family law guidance, document preparation and court coaching. Online and telephonic —
+              Specialist family law guidance, document preparation and court coaching. Online and telephonic â€”
               nationwide.
             </p>
           </div>
@@ -366,7 +383,7 @@ function Footer({ onNavigate }) {
               {CONTACT.email}
             </a>
             <p style={{ color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}>
-              EFT only — no online payment
+              EFT only â€” no online payment
             </p>
             <p style={{ color: 'rgba(247,243,236,0.7)', padding: '6px 0', fontSize: '0.92rem' }}>
               All nine provinces of South Africa
@@ -377,7 +394,7 @@ function Footer({ onNavigate }) {
           {DISCLAIMER}
         </p>
         <p style={{ color: 'rgba(247,243,236,0.35)', fontSize: '0.78rem', marginTop: 24 }}>
-          © {new Date().getFullYear()} Van Wyk Family Law Advisory. All rights reserved.
+          Â© {new Date().getFullYear()} Van Wyk Family Law Advisory. All rights reserved.
         </p>
       </div>
     </footer>
@@ -451,7 +468,16 @@ export default function App() {
 
   const isPrivacy = route.startsWith('#/privacy');
   const isTerms = route.startsWith('#/terms');
-  const scrolled = scrollY > 50 || isPrivacy || isTerms;
+  const isPractice = route.startsWith('#/practice');
+  const scrolled = scrollY > 50 || isPrivacy || isTerms || isPractice;
+
+  if (isPractice) {
+    return (
+      <div style={{ height: '100vh', overflowY: 'auto' }}>
+        <PracticeApp />
+      </div>
+    );
+  }
 
   return (
     <div

@@ -78,6 +78,27 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 .btn-outline:hover { border-color: var(--copper); background: rgba(181, 113, 74, 0.12); }
 
+.btn-outline-dark {
+  display: inline-block;
+  background: transparent;
+  color: var(--forest);
+  padding: 15px 36px;
+  border: 1px solid rgba(45, 74, 62, 0.4);
+  border-radius: 2px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: border-color 0.3s, background 0.3s;
+}
+.btn-outline-dark:hover { border-color: var(--copper); background: rgba(181, 113, 74, 0.08); }
+
+@media print {
+  body * { visibility: hidden; }
+  #print-quote, #print-quote * { visibility: visible; }
+  #print-quote { position: absolute; left: 0; top: 0; width: 100%; }
+}
+
 .eyebrow {
   font-size: 0.78rem;
   letter-spacing: 0.28em;
