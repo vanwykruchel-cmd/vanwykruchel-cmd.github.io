@@ -4,6 +4,7 @@ import { getTemplates } from './templates';
 import { MATTER_TYPES, PROVINCES } from '../constants/data';
 import { account } from './billing';
 import { FeesTime, FileInvoices, Payments, AccountStatement, PrintInvoice, PrintAccount } from './FileBilling';
+import CourtDocs from './CourtDocs';
 
 const ACTIVITY_TYPES = ['Note', 'Telephone call', 'Email', 'WhatsApp', 'Session recording', 'Document sent', 'Other'];
 const DOC_CATEGORIES = ['Drafted document', 'Court document', 'Client correspondence', 'Evidence', 'Other'];
@@ -33,7 +34,7 @@ const CASE_FIELD_DEFS = [
   ['currentArrangement', 'Current care / contact arrangement'],
 ];
 
-const SUB_TABS = ['Case File', 'Activity', 'Fees & Time', 'Invoices', 'Payments', 'Statement', 'Quotes', 'Forms', 'Documents'];
+const SUB_TABS = ['Case File', 'Court Docs', 'Activity', 'Fees & Time', 'Invoices', 'Payments', 'Statement', 'Quotes', 'Forms', 'Documents'];
 
 export default function ClientProfile({ client, data, update, onBack, onNewQuote }) {
   const [sub, setSub] = useState('Case File');
@@ -99,6 +100,7 @@ export default function ClientProfile({ client, data, update, onBack, onNewQuote
       </div>
 
       {sub === 'Case File' && <CaseFile client={client} patchClient={patchClient} />}
+      {sub === 'Court Docs' && <CourtDocs client={client} patchClient={patchClient} settings={data.settings} printText={printText} />}
       {sub === 'Activity' && <Activity client={client} patchClient={patchClient} />}
       {sub === 'Fees & Time' && <FeesTime client={client} patchClient={patchClient} settings={data.settings} />}
       {sub === 'Invoices' && <FileInvoices client={client} data={data} update={update} settings={data.settings} onPrint={printInvoice} />}
