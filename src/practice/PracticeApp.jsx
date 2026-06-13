@@ -7,6 +7,12 @@ import {
   card, input, label, btn, btnGhost, tag, STAGE_COLORS, PrintHeader,
 } from './ui';
 import { MATTER_TYPES, PROVINCES, DISCLAIMER } from '../constants/data';
+import {
+  DEFAULT_RATES, account, unbilledTotal, paymentsOf, nextFileRef,
+} from './billing';
+import { PrintInvoice } from './FileBilling';
+import GlobalSearch from './GlobalSearch';
+import Manual from './Manual';
 
 /*
  * Van Wyk Practice Manager — private CRM, client files, pricing, quoting,
@@ -35,11 +41,7 @@ const DEFAULT_PRICES = [
   { id: 'b3', name: 'BUNDLE: Safety (protection order + coaching)', price: 1950 },
 ];
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* corrupted store — start fresh */ }
+function freshData() {
   return {
     pin: null,
     settings: {
@@ -51,11 +53,52 @@ function load() {
       accNo: '',
       branch: '',
       quoteValidityDays: 14,
+      ...DEFAULT_RATES,
     },
     clients: [],
     prices: DEFAULT_PRICES,
     quotes: [],
+    invoices: [],
+    diary: [],
+    invoiceSeq: 0,
+    fileSeq: 0,
   };
+}
+
+/* Bring any saved data up to the current shape without losing a thing:
+ * add new top-level lists, default rates, and give older client files a
+ * reference number and empty fee/payment lists. */
+function migrate(d) {
+  const base = freshData();
+  let seq = d.fileSeq || 0;
+  const clients = (d.clients || []).map((c) => {
+    let ref = c.ref;
+    if (!ref) { seq += 1; ref = `VW-${String(seq).padStart(3, '0')}`; }
+    return {
+      ...c, ref,
+      activities: c.activities || [], documents: c.documents || [],
+      forms: c.forms || {}, case: c.case || {},
+      fees: c.fees || [], payments: c.payments || [],
+    };
+  });
+  return {
+    ...base,
+    ...d,
+    settings: { ...base.settings, ...(d.settings || {}) },
+    clients,
+    invoices: d.invoices || [],
+    diary: d.diary || [],
+    invoiceSeq: d.invoiceSeq || 0,
+    fileSeq: Math.max(seq, d.fileSeq || 0),
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return migrate(JSON.parse(raw));
+  } catch (e) { /* corrupted store — start fresh */ }
+  return freshData();
 }
 
 function persist(data) {
@@ -106,30 +149,48 @@ function PinGate({ data, setData, onUnlock }) {
   );
 }
 
+/* Gather diary reminders + court dates from across every file, soonest first. */
+function diaryItems(data) {
+  const items = (data.diary || []).map((e) => {
+    const c = data.clients.find((x) => x.id === e.clientId);
+    return { id: e.id, date: e.date, note: e.note, done: !!e.done, clientId: e.clientId, clientName: c?.name || 'General', kind: 'reminder' };
+  });
+  data.clients.forEach((c) => {
+    const d = c.case?.nextCourtDate;
+    if (d) items.push({ id: 'court-' + c.id, date: d, note: 'Court date', done: false, clientId: c.id, clientName: c.name, kind: 'court' });
+  });
+  return items.sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
 /* ================= DASHBOARD ================= */
-function Dashboard({ data }) {
+function Dashboard({ data, onOpenClient, goTab }) {
   const stats = useMemo(() => {
+    const ym = today().slice(0, 7);
+    let outstanding = 0, wip = 0, thisMonth = 0;
+    data.clients.forEach((c) => {
+      const a = account(c, data);
+      if (a.balance > 0) outstanding += a.balance;
+      wip += unbilledTotal(c);
+      paymentsOf(c).forEach((p) => { if ((p.date || '').slice(0, 7) === ym) thisMonth += Number(p.amount) || 0; });
+    });
     const open = data.clients.filter((c) => !['Completed', 'Referred Out'].includes(c.stage)).length;
-    const quotesSent = data.quotes.filter((q) => q.status === 'Sent').length;
-    const paid = data.quotes.filter((q) => q.status === 'Paid');
-    const income = paid.reduce((s, q) => s + quoteTotal(q), 0);
-    const thisMonth = paid
-      .filter((q) => (q.paidDate || q.created).slice(0, 7) === today().slice(0, 7))
-      .reduce((s, q) => s + quoteTotal(q), 0);
     const formsOutstanding = data.clients.reduce((n, c) => {
       const f = c.forms || {};
       const signedCount = ['popia', 'disclosure', 'indemnity', 'contract'].filter((k) => f[k]?.status === 'Signed').length;
-      return n + (['Paid — Active'].includes(c.stage) && signedCount < 4 ? 1 : 0);
+      return n + (c.stage === 'Paid — Active' && signedCount < 4 ? 1 : 0);
     }, 0);
-    return { open, quotesSent, income, thisMonth, formsOutstanding };
+    return { open, outstanding, wip, thisMonth, formsOutstanding };
   }, [data]);
+
+  const horizon = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+  const upcoming = diaryItems(data).filter((i) => !i.done && i.date <= horizon);
 
   const boxes = [
     ['Active matters', stats.open],
-    ['Quotes awaiting answer', stats.quotesSent],
     ['Income this month', R(stats.thisMonth)],
-    ['Income all time', R(stats.income)],
-    ['Active clients missing signed forms', stats.formsOutstanding],
+    ['Outstanding (owed to you)', R(stats.outstanding)],
+    ['Unbilled work', R(stats.wip)],
+    ['Active files missing signed forms', stats.formsOutstanding],
   ];
 
   return (
@@ -140,6 +201,34 @@ function Dashboard({ data }) {
           <p className="serif" style={{ fontSize: '2rem', color: 'var(--forest)', fontWeight: 700, marginTop: 6 }}>{v}</p>
         </div>
       ))}
+
+      <div style={{ ...card, gridColumn: '1 / -1' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+          <h3 className="serif" style={{ fontSize: '1.3rem' }}>Coming up (next 14 days)</h3>
+          <button style={{ ...btnGhost, padding: '6px 12px' }} onClick={() => goTab('Diary')}>Open Diary</button>
+        </div>
+        {upcoming.length === 0 ? (
+          <p style={{ color: 'var(--muted)' }}>Nothing due in the next two weeks.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {upcoming.map((i) => {
+              const overdue = i.date < today();
+              return (
+                <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--cream)', borderRadius: 4, borderLeft: `3px solid ${overdue ? '#a33' : i.kind === 'court' ? 'var(--forest)' : 'var(--copper)'}` }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: overdue ? '#a33' : 'var(--forest)' }}>{i.date}</span>
+                    <span style={{ color: 'var(--mid)' }}> · {i.note}</span>
+                    <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}> — {i.clientName}</span>
+                    {i.kind === 'court' && <span style={{ ...tag('#e7f0e9', '#1d6b3a'), marginLeft: 8 }}>court</span>}
+                  </div>
+                  {i.clientId && <button style={{ ...btnGhost, padding: '5px 10px' }} onClick={() => onOpenClient(i.clientId)}>Open</button>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div style={{ ...card, gridColumn: '1 / -1' }}>
         <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 12 }}>Pipeline</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -155,11 +244,16 @@ function Dashboard({ data }) {
 }
 
 /* ================= CLIENTS (list + profile) ================= */
-function Clients({ data, update, onNewQuote }) {
+function Clients({ data, update, onNewQuote, focusId, clearFocus }) {
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState(null);
+
+  useEffect(() => {
+    if (focusId) { setOpenId(focusId); clearFocus(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   const openClient = data.clients.find((c) => c.id === openId);
 
@@ -173,8 +267,9 @@ function Clients({ data, update, onNewQuote }) {
   }
 
   function saveNew() {
-    const c = { ...draft, id: uid(), activities: [], documents: [], forms: {}, case: {} };
-    update({ clients: [...data.clients, c] });
+    const { ref, seq } = nextFileRef(data);
+    const c = { ...draft, id: uid(), ref, activities: [], documents: [], forms: {}, case: {}, fees: [], payments: [] };
+    update({ clients: [...data.clients, c], fileSeq: seq });
     setAdding(false);
     setOpenId(c.id);
   }
@@ -184,8 +279,9 @@ function Clients({ data, update, onNewQuote }) {
     update({ clients: data.clients.filter((c) => c.id !== id) });
   }
 
+  const q = search.toLowerCase();
   const list = data.clients
-    .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((c) => [c.name, c.ref, c.phone, c.email, c.matterType].some((v) => String(v || '').toLowerCase().includes(q)))
     .sort((a, b) => (a.created < b.created ? 1 : -1));
 
   if (adding)
@@ -235,8 +331,10 @@ function Clients({ data, update, onNewQuote }) {
             <div key={c.id} style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ cursor: 'pointer' }} onClick={() => setOpenId(c.id)}>
                 <strong style={{ color: 'var(--forest)', fontSize: '1.05rem' }}>{c.name}</strong>
+                {c.ref && <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}> · {c.ref}</span>}
                 <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 3 }}>
                   {c.matterType} · {c.province} · forms signed: {signed}/4
+                  {account(c, data).balance > 0 && <strong style={{ color: 'var(--copper)' }}> · owing {R(account(c, data).balance)}</strong>}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -560,36 +658,164 @@ function Templates({ data }) {
   );
 }
 
-/* ================= INCOME ================= */
-function Income({ data }) {
-  const paid = data.quotes.filter((q) => q.status === 'Paid');
-  const byMonth = {};
-  paid.forEach((q) => {
-    const m = (q.paidDate || q.created).slice(0, 7);
-    byMonth[m] = (byMonth[m] || 0) + quoteTotal(q);
-  });
-  const months = Object.keys(byMonth).sort().reverse();
-  const grand = months.reduce((s, m) => s + byMonth[m], 0);
+/* ================= REPORTS ================= */
+function Reports({ data, onOpenClient }) {
+  const r = useMemo(() => {
+    const byMonth = {};
+    let received = 0, outstanding = 0, wip = 0, invoiced = 0;
+    const debtors = [];
+    data.clients.forEach((c) => {
+      paymentsOf(c).forEach((p) => {
+        const m = (p.date || '').slice(0, 7);
+        const amt = Number(p.amount) || 0;
+        byMonth[m] = (byMonth[m] || 0) + amt;
+        received += amt;
+      });
+      const a = account(c, data);
+      invoiced += a.charges;
+      wip += unbilledTotal(c);
+      if (a.balance > 0) { outstanding += a.balance; debtors.push({ c, balance: a.balance }); }
+    });
+    const months = Object.keys(byMonth).filter(Boolean).sort().reverse();
+    debtors.sort((x, y) => y.balance - x.balance);
+    return { byMonth, months, received, outstanding, wip, invoiced, debtors };
+  }, [data]);
 
   return (
-    <div style={{ ...card, maxWidth: 560 }}>
-      <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 14 }}>Income Ledger</h3>
-      {months.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>No paid quotes yet. Mark a quote as “Paid” and it lands here.</p>
-      ) : (
-        <>
-          {months.map((m) => (
-            <div key={m} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--creamdark)' }}>
-              <span>{m}</span>
-              <strong style={{ color: 'var(--forest)' }}>{R(byMonth[m])}</strong>
-            </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0 0', fontSize: '1.1rem' }}>
-            <strong>Total</strong>
-            <strong style={{ color: 'var(--copper)' }}>{R(grand)}</strong>
+    <div style={{ display: 'grid', gap: 18, maxWidth: 760 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
+        {[['Received (all time)', R(r.received), 'var(--forest)'], ['Invoiced (all time)', R(r.invoiced), 'var(--forest)'], ['Outstanding', R(r.outstanding), 'var(--copper)'], ['Unbilled work', R(r.wip), 'var(--copper)']].map(([t, v, c]) => (
+          <div key={t} style={{ ...card, borderTop: '3px solid var(--copper)' }}>
+            <p style={{ color: 'var(--muted)', fontSize: '0.74rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{t}</p>
+            <p className="serif" style={{ fontSize: '1.6rem', color: c, fontWeight: 700, marginTop: 4 }}>{v}</p>
           </div>
-        </>
-      )}
+        ))}
+      </div>
+
+      <div style={card}>
+        <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 12 }}>Income received per month</h3>
+        {r.months.length === 0 ? (
+          <p style={{ color: 'var(--muted)' }}>No payments recorded yet. Record payments inside a file and they total up here.</p>
+        ) : r.months.map((m) => (
+          <div key={m} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--creamdark)' }}>
+            <span>{m}</span><strong style={{ color: 'var(--forest)' }}>{R(r.byMonth[m])}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div style={card}>
+        <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 6 }}>Outstanding accounts</h3>
+        <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 12 }}>Who still owes you — your follow-up list.</p>
+        {r.debtors.length === 0 ? (
+          <p style={{ color: 'var(--muted)' }}>Nothing outstanding. Everyone is paid up. 🎉</p>
+        ) : r.debtors.map(({ c, balance }) => (
+          <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--creamdark)' }}>
+            <span>{c.name}{c.ref ? ` · ${c.ref}` : ''}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <strong style={{ color: 'var(--copper)' }}>{R(balance)}</strong>
+              <button style={{ ...btnGhost, padding: '5px 10px' }} onClick={() => onOpenClient(c.id)}>Open</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================= ALL INVOICES (across files) ================= */
+function GlobalInvoices({ data, onOpenClient, onPrint }) {
+  const [q, setQ] = useState('');
+  const query = q.toLowerCase();
+  const rows = [...(data.invoices || [])]
+    .map((i) => ({ inv: i, client: data.clients.find((c) => c.id === i.clientId) }))
+    .filter(({ inv, client }) => [inv.number, client?.name].some((v) => String(v || '').toLowerCase().includes(query)))
+    .sort((a, b) => (a.inv.date < b.inv.date ? 1 : -1));
+  const total = rows.reduce((s, { inv }) => s + (inv.total || 0), 0);
+
+  return (
+    <div style={{ maxWidth: 760 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+        <input style={{ ...input, maxWidth: 300 }} placeholder="Search invoice number or client…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <span style={{ color: 'var(--muted)', alignSelf: 'center' }}>{rows.length} invoice(s) · {R(total)}</span>
+      </div>
+      {rows.length === 0 && <p style={{ color: 'var(--muted)' }}>No invoices yet. Create one from inside a client file (Invoices tab).</p>}
+      <div style={{ display: 'grid', gap: 10 }}>
+        {rows.map(({ inv, client }) => (
+          <div key={inv.id} style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <strong style={{ color: 'var(--forest)' }}>{inv.number}</strong>
+              <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 3 }}>{inv.date} · {client?.name || 'Unknown'}{client?.ref ? ` · ${client.ref}` : ''}</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <strong style={{ color: 'var(--copper)' }}>{R(inv.total)}</strong>
+              <button style={btnGhost} onClick={() => onPrint(inv, client)}>Print / PDF</button>
+              {client && <button style={btn} onClick={() => onOpenClient(client.id)}>Open File</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================= DIARY (reminders + court dates) ================= */
+function Diary({ data, update, onOpenClient }) {
+  const blank = () => ({ date: today(), note: '', clientId: '' });
+  const [e, setE] = useState(blank);
+  const items = diaryItems(data);
+
+  function add() {
+    if (!e.note.trim()) return;
+    update({ diary: [...(data.diary || []), { ...e, id: uid(), done: false }] });
+    setE(blank());
+  }
+  function toggle(id) {
+    update({ diary: (data.diary || []).map((x) => (x.id === id ? { ...x, done: !x.done } : x)) });
+  }
+  function remove(id) {
+    update({ diary: (data.diary || []).filter((x) => x.id !== id) });
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 16, maxWidth: 760 }}>
+      <div style={card}>
+        <h3 className="serif" style={{ fontSize: '1.25rem', marginBottom: 12 }}>Add a reminder</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12, marginBottom: 12 }}>
+          <div><label style={label}>Date</label><input type="date" style={input} value={e.date} onChange={(ev) => setE({ ...e, date: ev.target.value })} /></div>
+          <div>
+            <label style={label}>File (optional)</label>
+            <select style={input} value={e.clientId} onChange={(ev) => setE({ ...e, clientId: ev.target.value })}>
+              <option value="">General — not tied to a file</option>
+              {data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}{c.ref ? ` · ${c.ref}` : ''}</option>)}
+            </select>
+          </div>
+        </div>
+        <label style={label}>Reminder</label>
+        <input style={{ ...input, marginBottom: 12 }} placeholder="e.g. Phone client about settlement / File Rule 43 by…" value={e.note} onChange={(ev) => setE({ ...e, note: ev.target.value })} />
+        <button style={btn} onClick={add} disabled={!e.note.trim()}>Add to Diary</button>
+      </div>
+
+      {items.length === 0 && <p style={{ color: 'var(--muted)' }}>No reminders yet. Court dates you enter on a file’s Case File show up here automatically.</p>}
+      {items.map((i) => {
+        const overdue = !i.done && i.date < today();
+        return (
+          <div key={i.id} style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, padding: '14px 18px', opacity: i.done ? 0.55 : 1, borderLeft: `3px solid ${overdue ? '#a33' : i.kind === 'court' ? 'var(--forest)' : 'var(--copper)'}` }}>
+            <div>
+              <span style={{ fontWeight: 600, color: overdue ? '#a33' : 'var(--forest)' }}>{i.date}</span>
+              <span style={{ color: 'var(--mid)', textDecoration: i.done ? 'line-through' : 'none' }}> · {i.note}</span>
+              <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}> — {i.clientName}</span>
+              {i.kind === 'court' && <span style={{ ...tag('#e7f0e9', '#1d6b3a'), marginLeft: 8 }}>court</span>}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {i.clientId && <button style={{ ...btnGhost, padding: '5px 10px' }} onClick={() => onOpenClient(i.clientId)}>Open</button>}
+              {i.kind === 'reminder' && <>
+                <button style={{ ...btnGhost, padding: '5px 10px' }} onClick={() => toggle(i.id)}>{i.done ? 'Undo' : 'Done'}</button>
+                <button style={{ ...btnGhost, color: '#a33', padding: '5px 10px' }} onClick={() => remove(i.id)}>✕</button>
+              </>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -616,7 +842,7 @@ function Settings({ data, update }) {
       try {
         const parsed = JSON.parse(reader.result);
         if (!parsed.clients || !parsed.prices) throw new Error('bad file');
-        update(parsed);
+        update(migrate(parsed));
         setMsg('Backup restored successfully.');
       } catch {
         setMsg('That file is not a valid backup.');
@@ -660,6 +886,32 @@ function Settings({ data, update }) {
       </div>
 
       <div style={card}>
+        <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 6 }}>Rates & VAT</h3>
+        <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 16 }}>
+          Your standard rates fill in automatically when you record work on a file (you can still change any single entry).
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[['hourlyRate', 'Hourly rate (R)'], ['unitRate', 'Per 6-min unit (R)'], ['perPageRate', 'Per page (R)'], ['travelRate', 'Travel per km (R)']].map(([k, lbl]) => (
+            <div key={k}>
+              <label style={label}>{lbl}</label>
+              <input type="number" step="0.01" style={input} value={s[k] ?? ''} onChange={(e) => setS({ ...s, [k]: Number(e.target.value) })} />
+            </div>
+          ))}
+        </div>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '16px 0 12px', cursor: 'pointer' }}>
+          <input type="checkbox" checked={!!s.vatEnabled} onChange={(e) => setS({ ...s, vatEnabled: e.target.checked })} style={{ accentColor: 'var(--copper)' }} />
+          <span style={{ fontSize: '0.9rem' }}>I am registered for VAT (add VAT to invoices)</span>
+        </label>
+        {s.vatEnabled && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={label}>VAT rate (%)</label><input type="number" step="0.01" style={input} value={s.vatRate ?? 15} onChange={(e) => setS({ ...s, vatRate: Number(e.target.value) })} /></div>
+            <div><label style={label}>VAT number</label><input style={input} value={s.vatNumber || ''} onChange={(e) => setS({ ...s, vatNumber: e.target.value })} /></div>
+          </div>
+        )}
+        <button style={{ ...btn, marginTop: 16 }} onClick={() => { update({ settings: s }); setMsg('Rates saved.'); }}>Save Rates</button>
+      </div>
+
+      <div style={card}>
         <h3 className="serif" style={{ fontSize: '1.3rem', marginBottom: 10 }}>Backup & Restore</h3>
         <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 14, lineHeight: 1.7 }}>
           Everything lives in this browser only. Export a backup file weekly and keep it somewhere safe
@@ -679,13 +931,15 @@ function Settings({ data, update }) {
 }
 
 /* ================= SHELL ================= */
-const TABS = ['Dashboard', 'Clients', 'Quotes', 'Templates', 'Pricing', 'Income', 'Settings'];
+const TABS = ['Dashboard', 'Search', 'Clients', 'Quotes', 'Invoices', 'Diary', 'Reports', 'Templates', 'Pricing', 'Settings', 'Manual'];
 
 export default function PracticeApp() {
   const [data, setData] = useState(load);
   const [unlocked, setUnlocked] = useState(false);
   const [tab, setTab] = useState('Dashboard');
   const [newQuoteFor, setNewQuoteFor] = useState(null);
+  const [focusClient, setFocusClient] = useState(null);
+  const [printInv, setPrintInv] = useState(null); // {invoice, client}
 
   useEffect(() => {
     persist(data);
@@ -698,6 +952,16 @@ export default function PracticeApp() {
   function handleNewQuote(clientId) {
     setNewQuoteFor(clientId);
     setTab('Quotes');
+  }
+
+  function openClient(clientId) {
+    setFocusClient(clientId);
+    setTab('Clients');
+  }
+
+  function printInvoice(invoice, client) {
+    setPrintInv({ invoice, client });
+    setTimeout(() => { window.print(); setPrintInv(null); }, 150);
   }
 
   if (!unlocked) return <PinGate data={data} setData={setData} onUnlock={() => setUnlocked(true)} />;
@@ -730,14 +994,19 @@ export default function PracticeApp() {
             </button>
           ))}
         </div>
-        {tab === 'Dashboard' && <Dashboard data={data} />}
-        {tab === 'Clients' && <Clients data={data} update={update} onNewQuote={handleNewQuote} />}
+        {tab === 'Dashboard' && <Dashboard data={data} onOpenClient={openClient} goTab={setTab} />}
+        {tab === 'Search' && <GlobalSearch data={data} onOpenClient={openClient} />}
+        {tab === 'Clients' && <Clients data={data} update={update} onNewQuote={handleNewQuote} focusId={focusClient} clearFocus={() => setFocusClient(null)} />}
         {tab === 'Quotes' && <Quotes data={data} update={update} newFor={newQuoteFor} clearNewFor={() => setNewQuoteFor(null)} />}
+        {tab === 'Invoices' && <GlobalInvoices data={data} onOpenClient={openClient} onPrint={printInvoice} />}
+        {tab === 'Diary' && <Diary data={data} update={update} onOpenClient={openClient} />}
+        {tab === 'Reports' && <Reports data={data} onOpenClient={openClient} />}
         {tab === 'Templates' && <Templates data={data} />}
         {tab === 'Pricing' && <Pricing data={data} update={update} />}
-        {tab === 'Income' && <Income data={data} />}
         {tab === 'Settings' && <Settings data={data} update={update} />}
+        {tab === 'Manual' && <Manual />}
       </div>
+      {printInv && <PrintInvoice invoice={printInv.invoice} client={printInv.client} settings={data.settings} />}
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { card, input, label, btn, btnGhost, tag, STAGES, STAGE_COLORS, R, uid, today, quoteTotal, PrintHeader, PrintTextDoc } from './ui';
+import { card, input, label, btn, btnGhost, tag, STAGES, STAGE_COLORS, R, uid, today, quoteTotal, PrintTextDoc } from './ui';
 import { getTemplates } from './templates';
 import { MATTER_TYPES, PROVINCES } from '../constants/data';
+import { account } from './billing';
+import { FeesTime, FileInvoices, Payments, AccountStatement, PrintInvoice, PrintAccount } from './FileBilling';
 
 const ACTIVITY_TYPES = ['Note', 'Telephone call', 'Email', 'WhatsApp', 'Session recording', 'Document sent', 'Other'];
 const DOC_CATEGORIES = ['Drafted document', 'Court document', 'Client correspondence', 'Evidence', 'Other'];
@@ -31,33 +33,29 @@ const CASE_FIELD_DEFS = [
   ['currentArrangement', 'Current care / contact arrangement'],
 ];
 
-const SUB_TABS = ['Case File', 'Activity', 'Quotes', 'Forms', 'Documents', 'Statement'];
+const SUB_TABS = ['Case File', 'Activity', 'Fees & Time', 'Invoices', 'Payments', 'Statement', 'Quotes', 'Forms', 'Documents'];
 
 export default function ClientProfile({ client, data, update, onBack, onNewQuote }) {
   const [sub, setSub] = useState('Case File');
-  const [printDoc, setPrintDoc] = useState(null); // {title, text} or {statement:true}
+  const [printDoc, setPrintDoc] = useState(null); // {title,text} | {invoice} | {account:true}
 
   function patchClient(patch) {
     update({ clients: data.clients.map((c) => (c.id === client.id ? { ...c, ...patch } : c)) });
   }
 
-  function printText(title, text) {
-    setPrintDoc({ title, text });
+  function doPrint(setter) {
+    setter();
     setTimeout(() => {
       window.print();
       setPrintDoc(null);
     }, 150);
   }
-
-  function printStatement() {
-    setPrintDoc({ statement: true });
-    setTimeout(() => {
-      window.print();
-      setPrintDoc(null);
-    }, 150);
-  }
+  const printText = (title, text) => doPrint(() => setPrintDoc({ title, text }));
+  const printInvoice = (invoice) => doPrint(() => setPrintDoc({ invoice }));
+  const printStatement = () => doPrint(() => setPrintDoc({ account: true }));
 
   const clientQuotes = data.quotes.filter((q) => q.clientId === client.id);
+  const acc = account(client, data);
   const [bg, fg] = STAGE_COLORS[client.stage] || ['#eee', '#333'];
 
   return (
@@ -66,12 +64,15 @@ export default function ClientProfile({ client, data, update, onBack, onNewQuote
 
       <div style={{ ...card, marginBottom: 18, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
         <div>
-          <h2 className="serif" style={{ fontSize: '1.6rem' }}>{client.name}</h2>
+          <h2 className="serif" style={{ fontSize: '1.6rem' }}>
+            {client.name}{client.ref && <span style={{ color: 'var(--muted)', fontSize: '1rem', fontWeight: 400 }}> · {client.ref}</span>}
+          </h2>
           <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginTop: 4 }}>
             {client.matterType} · {client.province} · {client.phone || '—'} · {client.email || '—'}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {acc.balance > 0 && <span style={tag('#fbeede', '#9a5c38')}>Owing {R(acc.balance)}</span>}
           <span style={tag(bg, fg)}>{client.stage}</span>
           <select style={{ ...input, width: 'auto', padding: '7px 10px' }} value={client.stage} onChange={(e) => patchClient({ stage: e.target.value })}>
             {STAGES.map((s) => <option key={s}>{s}</option>)}
@@ -99,13 +100,17 @@ export default function ClientProfile({ client, data, update, onBack, onNewQuote
 
       {sub === 'Case File' && <CaseFile client={client} patchClient={patchClient} />}
       {sub === 'Activity' && <Activity client={client} patchClient={patchClient} />}
+      {sub === 'Fees & Time' && <FeesTime client={client} patchClient={patchClient} settings={data.settings} />}
+      {sub === 'Invoices' && <FileInvoices client={client} data={data} update={update} settings={data.settings} onPrint={printInvoice} />}
+      {sub === 'Payments' && <Payments client={client} patchClient={patchClient} data={data} />}
+      {sub === 'Statement' && <AccountStatement client={client} data={data} onPrint={printStatement} />}
       {sub === 'Quotes' && <ProfileQuotes quotes={clientQuotes} onNewQuote={() => onNewQuote(client.id)} />}
       {sub === 'Forms' && <Forms client={client} patchClient={patchClient} settings={data.settings} printText={printText} />}
       {sub === 'Documents' && <Documents client={client} patchClient={patchClient} printText={printText} />}
-      {sub === 'Statement' && <Statement client={client} quotes={clientQuotes} onPrint={printStatement} />}
 
-      {printDoc && !printDoc.statement && <PrintTextDoc title={printDoc.title} text={printDoc.text} settings={data.settings} />}
-      {printDoc && printDoc.statement && <PrintStatement client={client} quotes={clientQuotes} settings={data.settings} />}
+      {printDoc?.text != null && <PrintTextDoc title={printDoc.title} text={printDoc.text} settings={data.settings} />}
+      {printDoc?.invoice && <PrintInvoice invoice={printDoc.invoice} client={client} settings={data.settings} />}
+      {printDoc?.account && <PrintAccount client={client} data={data} settings={data.settings} />}
     </div>
   );
 }
@@ -367,79 +372,5 @@ function Documents({ client, patchClient, printText }) {
   );
 }
 
-/* ---------- Statement ---------- */
-function Statement({ client, quotes, onPrint }) {
-  const rows = quotes.filter((q) => q.status !== 'Draft' && q.status !== 'Declined');
-  const invoiced = rows.reduce((s, q) => s + quoteTotal(q), 0);
-  const paid = rows.filter((q) => q.status === 'Paid').reduce((s, q) => s + quoteTotal(q), 0);
-
-  return (
-    <div style={{ ...card, maxWidth: 640 }}>
-      <h3 className="serif" style={{ fontSize: '1.25rem', marginBottom: 14 }}>Account Statement — {client.name}</h3>
-      {rows.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>Nothing to state yet — quotes appear here once Sent, Accepted or Paid.</p>
-      ) : (
-        <>
-          {rows.map((q) => (
-            <div key={q.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--creamdark)', fontSize: '0.92rem' }}>
-              <span>{q.created} · {q.number} ({q.status})</span>
-              <strong style={{ color: 'var(--forest)' }}>{R(quoteTotal(q))}</strong>
-            </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12 }}><span>Total invoiced</span><strong>{R(invoiced)}</strong></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Total paid</span><strong style={{ color: '#1d6b3a' }}>{R(paid)}</strong></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 6 }}>
-            <strong>Balance outstanding</strong>
-            <strong style={{ color: 'var(--copper)' }}>{R(invoiced - paid)}</strong>
-          </div>
-          <button style={{ ...btn, marginTop: 18 }} onClick={onPrint}>Print Statement / PDF</button>
-        </>
-      )}
-    </div>
-  );
-}
-
-function PrintStatement({ client, quotes, settings }) {
-  const rows = quotes.filter((q) => q.status !== 'Draft' && q.status !== 'Declined');
-  const invoiced = rows.reduce((s, q) => s + quoteTotal(q), 0);
-  const paid = rows.filter((q) => q.status === 'Paid').reduce((s, q) => s + quoteTotal(q), 0);
-  return (
-    <div id="print-quote" style={{ background: '#fff', color: '#222', padding: '36px 44px', fontFamily: 'Raleway, sans-serif', fontSize: '13px', lineHeight: 1.6 }}>
-      <PrintHeader title="ACCOUNT STATEMENT" settings={settings} />
-      <p style={{ marginBottom: 4 }}><strong>Client:</strong> {client.name}</p>
-      <p style={{ marginBottom: 18 }}><strong>Date:</strong> {today()}</p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 18 }}>
-        <thead>
-          <tr style={{ background: '#2D4A3E', color: '#fff' }}>
-            <th style={{ textAlign: 'left', padding: '8px 12px' }}>Date</th>
-            <th style={{ textAlign: 'left', padding: '8px 12px' }}>Reference</th>
-            <th style={{ textAlign: 'left', padding: '8px 12px' }}>Status</th>
-            <th style={{ textAlign: 'right', padding: '8px 12px' }}>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((q) => (
-            <tr key={q.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '8px 12px' }}>{q.created}</td>
-              <td style={{ padding: '8px 12px' }}>{q.number}</td>
-              <td style={{ padding: '8px 12px' }}>{q.status}</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right' }}>{R(quoteTotal(q))}</td>
-            </tr>
-          ))}
-          <tr><td colSpan={3} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }}>Total invoiced</td><td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }}>{R(invoiced)}</td></tr>
-          <tr><td colSpan={3} style={{ padding: '4px 12px', textAlign: 'right' }}>Total paid</td><td style={{ padding: '4px 12px', textAlign: 'right' }}>{R(paid)}</td></tr>
-          <tr><td colSpan={3} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#B5714A' }}>Balance outstanding</td><td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#B5714A' }}>{R(invoiced - paid)}</td></tr>
-        </tbody>
-      </table>
-      {(settings.bankName || settings.accNo) && (
-        <div style={{ background: '#F7F3EC', padding: '12px 16px', borderLeft: '3px solid #B5714A' }}>
-          <p style={{ fontWeight: 700, margin: '0 0 4px', color: '#2D4A3E' }}>Payment — EFT only</p>
-          {settings.bankName && <p style={{ margin: 0 }}>Bank: {settings.bankName}</p>}
-          {settings.accName && <p style={{ margin: 0 }}>Account name: {settings.accName}</p>}
-          {settings.accNo && <p style={{ margin: 0 }}>Account number: {settings.accNo}</p>}
-          {settings.branch && <p style={{ margin: 0 }}>Branch code: {settings.branch}</p>}
-        </div>
-      )}
-    </div>
-  );
-}
+/* The Statement (debtor account) now lives in FileBilling.jsx — it is built from
+ * real Tax Invoices and Payments, not from quote statuses. */

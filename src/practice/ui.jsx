@@ -7,6 +7,8 @@ export const R = (n) => 'R ' + Number(n || 0).toLocaleString('en-ZA', { minimumF
 export const uid = () => Math.random().toString(36).slice(2, 10);
 export const today = () => new Date().toISOString().slice(0, 10);
 export const quoteTotal = (q) => q.items.reduce((s, i) => s + i.price * (i.qty || 1), 0);
+/* Round to two decimals (cents) without floating-point drift. */
+export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 export const card = {
   background: 'var(--white)',
