@@ -105,6 +105,23 @@ function persist(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
 }
 
+/* Read a website enquiry passed in via the #/practice?intake=... link that the
+ * contact form puts in the notification email. Returns the enquiry or null. */
+function parseIntake() {
+  try {
+    const m = (window.location.hash || '').match(/[?&]intake=([^&]+)/);
+    if (!m) return null;
+    let b64 = decodeURIComponent(m[1]).replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const obj = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (!obj || (!obj.firstName && !obj.lastName && !obj.email)) return null;
+    return obj;
+  } catch { return null; }
+}
+function clearIntakeHash() {
+  try { history.replaceState(null, '', window.location.pathname + window.location.search + '#/practice'); } catch { /* ignore */ }
+}
+
 /* ================= PIN GATE ================= */
 function PinGate({ data, setData, onUnlock }) {
   const [pin, setPin] = useState('');
@@ -940,6 +957,7 @@ export default function PracticeApp() {
   const [newQuoteFor, setNewQuoteFor] = useState(null);
   const [focusClient, setFocusClient] = useState(null);
   const [printInv, setPrintInv] = useState(null); // {invoice, client}
+  const [pendingIntake, setPendingIntake] = useState(parseIntake);
 
   useEffect(() => {
     persist(data);
@@ -957,6 +975,28 @@ export default function PracticeApp() {
   function openClient(clientId) {
     setFocusClient(clientId);
     setTab('Clients');
+  }
+
+  function addIntake() {
+    const i = pendingIntake;
+    if (!i) return;
+    const { ref, seq } = nextFileRef(data);
+    const name = `${i.firstName || ''} ${i.lastName || ''}`.trim() || i.email || 'New enquiry';
+    const activities = i.description ? [{ id: uid(), type: 'Note', date: today(), text: i.description, link: '' }] : [];
+    const c = {
+      id: uid(), ref, name, email: i.email || '', phone: i.phone || '',
+      province: i.province || PROVINCES[2], matterType: i.matterType || MATTER_TYPES[0],
+      stage: STAGES[0], notes: '', created: i.date || today(),
+      activities, documents: [], forms: {}, case: { notes: i.description || '' }, fees: [], payments: [],
+    };
+    update({ clients: [...data.clients, c], fileSeq: seq });
+    clearIntakeHash();
+    setPendingIntake(null);
+    openClient(c.id);
+  }
+  function dismissIntake() {
+    clearIntakeHash();
+    setPendingIntake(null);
   }
 
   function printInvoice(invoice, client) {
@@ -978,6 +1018,22 @@ export default function PracticeApp() {
             ← Back to website
           </a>
         </div>
+        {pendingIntake && (
+          <div style={{ ...card, borderLeft: '4px solid var(--copper)', marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <strong style={{ color: 'var(--forest)' }}>New website enquiry</strong>
+              <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginTop: 3 }}>
+                {`${pendingIntake.firstName || ''} ${pendingIntake.lastName || ''}`.trim() || pendingIntake.email}
+                {pendingIntake.matterType ? ` · ${pendingIntake.matterType}` : ''}
+                {pendingIntake.phone ? ` · ${pendingIntake.phone}` : ''}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={btn} onClick={addIntake}>Add to Clients</button>
+              <button style={btnGhost} onClick={dismissIntake}>Dismiss</button>
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 26 }}>
           {TABS.map((t) => (
             <button

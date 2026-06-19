@@ -588,6 +588,31 @@ export function ContactSection() {
     for (const [k, v] of fd.entries()) {
       if (k.startsWith('CASE: ') && String(v).trim()) payload[k.slice(6)] = v;
     }
+
+    // Build a one-click link that adds this enquiry straight into the Practice
+    // Manager. The visitor's browser cannot reach the practice's private data,
+    // so we pass the enquiry through the email as an encoded link instead.
+    try {
+      const caseExtra = [];
+      for (const [k, v] of fd.entries()) {
+        if (k.startsWith('CASE: ') && String(v).trim()) caseExtra.push(`${k.slice(6)}: ${v}`);
+      }
+      const intake = {
+        firstName: fd.get('firstName') || '',
+        lastName: fd.get('lastName') || '',
+        email: fd.get('email') || '',
+        phone: fd.get('phone') || '',
+        matterType: fd.get('matterType') || '',
+        province: fd.get('province') || '',
+        description: [fd.get('description') || '', caseExtra.join('\n')].filter(Boolean).join('\n\n'),
+        date: new Date().toISOString().slice(0, 10),
+      };
+      const enc = btoa(unescape(encodeURIComponent(JSON.stringify(intake))))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      payload['Add to Practice Manager (open this link)'] =
+        `${window.location.origin}${import.meta.env.BASE_URL}#/practice?intake=${enc}`;
+    } catch { /* non-fatal — the email still sends */ }
+
     try {
       const res = await fetch(`https://formsubmit.co/ajax/${CONTACT.email}`, {
         method: 'POST',

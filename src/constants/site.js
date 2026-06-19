@@ -3,7 +3,9 @@
  * data and the static blog generator. Change the domain here only.
  */
 export const SITE = {
-  url: 'https://vwfamilylawadvisory.com',
+  // Live address. If a custom domain (e.g. vwfamilylawadvisory.com) is bought
+  // later, change this one line, add public/CNAME, and redeploy.
+  url: 'https://vanwykruchel-cmd.github.io',
   name: 'Van Wyk Family Law Advisory',
   shortName: 'Van Wyk Family Law',
   email: 'vwfamilylawadvisory@gmail.com',

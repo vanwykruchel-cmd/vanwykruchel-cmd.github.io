@@ -1,123 +1,122 @@
 # Soft Launch & Google Guide — Van Wyk Family Law Advisory
 
-Everything below is written so you can do it yourself, step by step. Do the parts in order.
-When you finish the DNS step, tell me and I'll flip the site over to your domain in a couple of minutes.
+Plain steps, in order. Nothing here is urgent or risky.
+
+---
+
+## Your web address right now
+
+Your site is **live** at:
+
+> **https://vanwykruchel-cmd.github.io**
+
+This is your free address. **You have not bought a domain**, and you don't need to — everything works on this
+address. `vwfamilylawadvisory@gmail.com` is your free Gmail (your email), *not* a website domain.
+
+There is **no "switch" to do.** The site is fully live as it is. (If one day you'd like a shorter branded
+address like `vwfamilylawadvisory.co.za`, see the last section — it's optional and costs a small yearly fee.)
 
 ---
 
 ## What is already done ✅
 
-- New email everywhere on the site: **vwfamilylawadvisory@gmail.com**
-- Phone & WhatsApp removed (we'll add a number later)
-- Clear "affordable alternative to attorney fees" messaging on the home page
-- A new **Insights** blog with your first article: *What a Maintenance Officer Does — and Your Rights at the First Court Date* (fully referenced, with a "Book a consultation" call-to-action and room for photos)
-- Full **SEO** set up: search-friendly titles & descriptions, social-share previews, Google "structured data", a `sitemap.xml`, and `robots.txt`
-- Each article becomes its **own real web page** so Google can find and rank it
-
-The upgraded site is **live right now** at your current address so you can share it today.
-
----
-
-## Step 1 — Turn on your contact form (2 minutes, do this first)
-
-The contact form emails enquiries to **vwfamilylawadvisory@gmail.com** using a free service (FormSubmit).
-The very first time someone sends an enquiry, FormSubmit emails *that Gmail* asking you to confirm — **once**.
-
-- Send yourself a test enquiry from the website's contact form.
-- Open the Gmail inbox, find the "Confirm your email" message from FormSubmit, click the link.
-- After that, every enquiry arrives in your inbox automatically. (Check the Spam folder for the first one.)
+- New email everywhere: **vwfamilylawadvisory@gmail.com**
+- Phone & WhatsApp removed
+- Clear "affordable alternative to attorney fees" messaging
+- **Insights** blog with your first (fully referenced) article, with a "Book a consultation" button
+- The lead picture now fits neatly inside the article
+- Full **SEO**: search-friendly titles/descriptions, social previews, Google structured data, `sitemap.xml`, `robots.txt`
+- Each article is its own real web page so Google can rank it
+- **Enquiries can now flow into your Practice Manager** (see below)
 
 ---
 
-## Step 2 — Connect your domain (vwfamilylawadvisory.com)
+## Step 1 — Turn on your contact form (do this first, 2 minutes)
 
-You bought the domain from a registrar (e.g. Afrihost, GoDaddy, domains.co.za). Log in there and open the
-**DNS** settings for vwfamilylawadvisory.com. Add these records exactly:
+The form emails enquiries to **vwfamilylawadvisory@gmail.com** using a free service (FormSubmit). The first
+time anyone submits, FormSubmit sends *that Gmail* a one-time "Activate / Confirm" email.
 
-**Four A records** (Type: A, Host/Name: `@`):
-```
-185.199.108.153
-185.199.109.153
-185.199.110.153
-185.199.111.153
-```
-
-**One CNAME record** for the www version (Type: CNAME, Host/Name: `www`, Value/Target):
-```
-vanwykruchel-cmd.github.io
-```
-
-Save. DNS usually takes 1–3 hours (sometimes up to a day) to take effect.
-
-> When you've added these, **message me** and I'll switch the site onto your domain and turn on the padlock (HTTPS).
-> I keep this as a separate step on purpose — see Step 3 for why.
+1. Open the website, fill in the contact form yourself, and submit it.
+2. Open Gmail, find the FormSubmit confirmation email (check **Spam**), and click the link **once**.
+3. From then on, every enquiry lands in your inbox automatically.
 
 ---
 
-## Step 3 — Protect your Practice Manager data BEFORE the domain switch (important)
+## Step 2 — How an enquiry gets into your Practice Manager
 
-Your private **Practice Manager** (clients, invoices, court documents) is saved inside *this browser, on this
-web address*. When the site moves to vwfamilylawadvisory.com, that is technically a new address, so your saved
-data needs to be carried across **once**. It's easy:
+The website runs in the *visitor's* browser, so it cannot reach your private Practice Manager directly (that's
+what keeps your client data private and the whole thing free). Instead, every enquiry email now contains a line:
 
-1. **Before** the switch: open the site → Practice Manager → **Settings → Download Backup**. Save the file
-   (OneDrive is perfect).
-2. After I switch the domain: open the site at **vwfamilylawadvisory.com** → Practice Manager → **Settings →
-   Restore from Backup**, and choose that file.
+> **Add to Practice Manager (open this link)** — https://…/#/practice?intake=…
 
-That's it — everything reappears. (If you haven't used the Practice Manager with real client data yet, you can
-skip this.)
+When you get an enquiry:
+1. Open the email and **click that link**. Your Practice Manager opens (enter your PIN).
+2. A banner appears at the top: *"New website enquiry — [name]"* with an **Add to Clients** button.
+3. Click **Add to Clients** — a client file is created with their name, contact details, matter type and message
+   already filled in. Done.
+
+Tip: click the link on the computer where you normally use the Practice Manager (your saved data lives per
+device/browser).
 
 ---
 
-## Step 4 — Get on Google (after the domain is live)
+## Step 3 — Get on Google (free)
 
-### 4a. Google Search Console (tells Google your site exists)
-1. Go to **search.google.com/search-console** and sign in with your Google account.
-2. Choose **URL prefix**, enter `https://vwfamilylawadvisory.com`, and verify (the easiest method is usually
-   adding a TXT record at your registrar — Google shows you exactly what).
-3. Once verified, open **Sitemaps** and submit: `sitemap.xml`
-4. This is how Google discovers your home page and every article. Re-submit whenever we add new articles.
+### 3a. Google Search Console — tells Google your site exists
+1. Go to **search.google.com/search-console** and sign in with your Gmail.
+2. Choose **URL prefix** and enter: `https://vanwykruchel-cmd.github.io`
+3. Verify (the "HTML tag" method is easiest — if it asks for a tag, send it to me and I'll add it and redeploy).
+4. Once verified, open **Sitemaps** and submit: `sitemap.xml`
+5. Resubmit whenever we add new articles.
 
-### 4b. Google Business Profile (the panel that appears on the right in Google)
-This is the "striking Google listing" you asked about. It's free.
-1. Go to **business.google.com** and click **Manage now**.
+### 3b. Google Business Profile — the listing/panel on the right of Google
+1. Go to **business.google.com** → **Manage now**.
 2. Business name: **Van Wyk Family Law Advisory**
-3. Category: **Legal services** (you can add "Family law attorney" is NOT appropriate — use "Legal services"
-   or "Consultant"). Keep it consistent with the site: a legal *consultancy*, not a law firm.
-4. Because you work online/nationwide and don't want to show a street address, choose **"I deliver goods and
-   services to my customers"** (a *service-area business*) and set your service area to the provinces you cover.
-5. Add the website (vwfamilylawadvisory.com), the email, your hours, and a short description (you can reuse the
-   home-page wording).
-6. **Verification:** Google will ask to verify you (by video, phone, or postcard). A phone number helps here —
-   this is a good reason to add the business number once you have it.
-7. After approval, add a few photos and post your first article link as an update.
+3. Category: **Legal services** (do *not* pick "attorney" — you are a legal *consultancy*, not a law firm).
+4. Since you work online/nationwide and don't want to show a home address, choose
+   **"I deliver goods and services to my customers"** (a service-area business) and pick the provinces you cover.
+5. Website: `https://vanwykruchel-cmd.github.io` · Email: `vwfamilylawadvisory@gmail.com`
+6. **Verification:** Google verifies by video/phone/postcard. Having a business phone number makes this easier —
+   a good reason to add one later.
+7. Once live, add photos and post your article as an update.
 
-> Tip: the more your website and your Business Profile say the *same* things (name, services, area), the more
-> Google trusts and shows you.
+> The more your website and your Business Profile say the **same** things (name, services, area), the more Google
+> trusts and shows you.
 
 ---
 
-## Step 5 — Keep adding articles (this is what grows your Google traffic)
+## Step 4 — Keep adding articles (this is what grows your Google traffic)
 
-Every good article is another page that can rank when someone searches that topic. The more genuinely helpful
-articles, the more often you appear.
-
-**To publish a new article, send me:**
+Each helpful article is another page that can rank when people search that topic. To publish one, send me:
 - A title and the topic
 - The text (headings + paragraphs are fine)
 - Any **photos** you want in it (just attach them)
 - The **sources** you used (links) — we always reference sources
 
-I'll format it, add it to the Insights page, and redeploy. (Technically: articles live in
-`src/content/articles.js`; photos go in `public/articles/<slug>/`.)
+I'll format it, add it to the Insights page, and redeploy.
 
-**Good next topics** (high-search, ranking-friendly):
-- How to apply for a divorce in South Africa without an attorney
-- Rule 43 vs Rule 58: getting interim maintenance during a divorce
-- What a parenting plan must include (Children's Act)
-- How to get a protection order — and what it can and can't do
-- What "in community of property" really means when you divorce
+**Good next topics:** applying for a divorce without an attorney · Rule 43/58 interim maintenance · what a
+parenting plan must include · how to get a protection order · what "in community of property" means at divorce.
+
+---
+
+## Back up your Practice Manager (good habit)
+
+Your client/billing/court-document data lives in this browser only. Once a week:
+Practice Manager → **Settings → Download Backup**, and keep the file in OneDrive. That's your safety net.
+
+---
+
+## Optional, later: a custom domain
+
+If you ever buy a domain (e.g. `vwfamilylawadvisory.co.za`, ~R100–150/year from Afrihost, domains.co.za, etc.):
+1. Tell me the domain.
+2. You add a few DNS records at the registrar (I'll give you the exact values).
+3. Before we switch: Practice Manager → **Download Backup**.
+4. I point the site at the new domain and turn on HTTPS.
+5. You **Restore from Backup** on the new address (it's a new "browser address", so the data is carried over once).
+
+Not needed for launch — only if you want a shorter, branded address.
 
 ---
 
@@ -125,12 +124,10 @@ I'll format it, add it to the Insights page, and redeploy. (Technically: article
 
 | Thing | Value |
 |---|---|
-| Domain | vwfamilylawadvisory.com |
+| Live website | https://vanwykruchel-cmd.github.io |
 | Email | vwfamilylawadvisory@gmail.com |
-| Current (pre-switch) address | vanwykruchel-cmd.github.io |
-| Sitemap (after go-live) | https://vwfamilylawadvisory.com/sitemap.xml |
-| Blog index | https://vwfamilylawadvisory.com/articles/ |
-| First article | /articles/maintenance-officer-south-africa-first-court-date/ |
+| Blog index | https://vanwykruchel-cmd.github.io/articles/ |
+| Sitemap | https://vanwykruchel-cmd.github.io/sitemap.xml |
 
-Compliance reminder: the site is careful never to call you an attorney or a law firm — you are a **Family Law
-Consultant**, offering an affordable alternative. Keep that wording in anything you add.
+Compliance reminder: the site never calls you an attorney or a law firm — you are a **Family Law Consultant**
+offering an affordable alternative. Keep that wording in anything you add.

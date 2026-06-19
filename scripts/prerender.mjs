@@ -43,8 +43,9 @@ const CSS = `
   article h3{font-family:'Cormorant Garamond',serif;color:var(--forest);font-size:1.3rem;margin:24px 0 8px}
   article p{margin:0 0 16px}
   article ul,article ol{margin:0 0 18px 22px}article li{margin:0 0 9px}
-  article figure{margin:26px 0}article img{width:100%;height:auto;border-radius:6px;border:1px solid var(--creamdark)}
-  article figcaption{font-size:.85rem;color:var(--muted);margin-top:8px;text-align:center}
+  main figure{margin:26px 0}
+  main img{display:block;width:100%;height:auto;max-height:360px;object-fit:cover;border-radius:6px;border:1px solid var(--creamdark)}
+  main figcaption{font-size:.85rem;color:var(--muted);margin-top:8px;text-align:center}
   blockquote{border-left:3px solid var(--copper);background:var(--white);padding:14px 20px;margin:22px 0;font-style:italic}
   blockquote cite{display:block;font-style:normal;font-size:.85rem;color:var(--muted);margin-top:6px}
   .callout{background:var(--white);border:1px solid var(--creamdark);border-left:4px solid var(--copper);border-radius:6px;padding:20px 24px;margin:26px 0}
