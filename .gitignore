@@ -23,3 +23,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Practice Manager backups (may contain client data — never commit)
+vanwyk-practice-backup-*.json
