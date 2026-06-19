@@ -3,6 +3,8 @@ import useReveal from './useReveal';
 import Counter from './Counter';
 import { Motif, InkDrawing, SIGNATURE } from './motifs';
 import { SERVICES, FAQS, MATTER_TYPES, INCOME_BRACKETS, PROVINCES, CONTACT } from '../constants/data';
+import { ARTICLES } from '../content/articles';
+import { excerpt, formatDate } from '../content/renderArticle';
 
 const wrap = { maxWidth: 1100, margin: '0 auto', padding: '0 24px' };
 
@@ -70,6 +72,11 @@ export function GapSection() {
             representation. So you sit in maintenance court alone, not knowing what to fill in or what to say —
             while the other side has an attorney.
           </p>
+          <p style={{ fontSize: '1.12rem', lineHeight: 1.9, color: 'var(--mid)', marginTop: 18 }}>
+            This is a more affordable alternative: the same careful preparation and guidance, at a clear{' '}
+            <strong>fixed fee agreed up front</strong> — a fraction of what hourly attorney bills add up to. You stay
+            in control of your matter and your costs.
+          </p>
           <p
             className="serif"
             style={{ fontSize: '1.5rem', marginTop: 26, color: 'var(--forest)', fontStyle: 'italic' }}
@@ -88,7 +95,7 @@ export function HowSection() {
   const steps = [
     {
       t: 'Reach out',
-      d: 'Send an enquiry through the form or WhatsApp. Tell me briefly what you are facing. No cost, no obligation.',
+      d: 'Send an enquiry through the form. Tell me briefly what you are facing. No cost, no obligation.',
     },
     {
       t: 'Intake consultation',
@@ -629,8 +636,9 @@ export function ContactSection() {
         <p className="eyebrow reveal">Book a Consultation</p>
         <h2 className="section-title reveal d1">Tell me what you are facing.</h2>
         <p className="reveal d2" style={{ maxWidth: 640, lineHeight: 1.8 }}>
-          Send your enquiry below, or message directly on WhatsApp. You can expect a response within{' '}
-          <strong>1 to 2 working days</strong> — we will then discuss exactly what your matter needs.
+          Send your enquiry below. You can expect a response within{' '}
+          <strong>1 to 2 working days</strong> — we will then discuss exactly what your matter needs, and what it
+          will cost, before any work begins.
         </p>
         <div
           className="reveal d3"
@@ -687,8 +695,8 @@ export function ContactSection() {
                 <input required type="email" style={inputStyle} name="email" />
               </div>
               <div>
-                <label style={labelStyle}>Phone / WhatsApp *</label>
-                <input required type="tel" style={inputStyle} name="phone" />
+                <label style={labelStyle}>Phone (optional)</label>
+                <input type="tel" style={inputStyle} name="phone" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 22 }}>
@@ -826,8 +834,8 @@ export function ContactSection() {
               </button>
               {status === 'error' && (
                 <p style={{ color: '#a33', marginTop: 12, lineHeight: 1.6 }}>
-                  Something went wrong sending your enquiry. Please try again, or message us directly on WhatsApp
-                  at {CONTACT.whatsappDisplay}.
+                  Something went wrong sending your enquiry. Please try again, or email us directly at{' '}
+                  {CONTACT.email}.
                 </p>
               )}
             </div>
@@ -845,17 +853,11 @@ export function ContactSection() {
           </div>
           <div>
             <p style={{ fontSize: '0.78rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--copper)', fontWeight: 600 }}>
-              WhatsApp
+              Response time
             </p>
-            <a
-              href={`https://wa.me/${CONTACT.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="serif"
-              style={{ fontSize: '1.2rem', color: 'var(--forest)' }}
-            >
-              {CONTACT.whatsappDisplay}
-            </a>
+            <span className="serif" style={{ fontSize: '1.2rem', color: 'var(--forest)' }}>
+              Within 1–2 working days
+            </span>
           </div>
           <div>
             <p style={{ fontSize: '0.78rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--copper)', fontWeight: 600 }}>
@@ -865,6 +867,49 @@ export function ContactSection() {
               All nine provinces — online & telephonic
             </p>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- INSIGHTS (blog teaser) ---------- */
+export function InsightsSection() {
+  const ref = useReveal();
+  const latest = [...ARTICLES].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
+  if (latest.length === 0) return null;
+  return (
+    <section ref={ref} id="insights" style={{ background: 'var(--white)', padding: 'clamp(70px, 10vw, 130px) 0' }}>
+      <div style={wrap}>
+        <p className="eyebrow reveal">Insights &amp; Articles</p>
+        <h2 className="section-title reveal d1">Know the system before you step into it.</h2>
+        <p className="reveal d2" style={{ maxWidth: 640, lineHeight: 1.8 }}>
+          Plain-English guides to South African family law — written so you understand your rights before a single
+          form is filed.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginTop: 46 }}>
+          {latest.map((a, i) => (
+            <a
+              key={a.slug}
+              href={`/articles/${a.slug}/`}
+              className={`reveal d${i + 1}`}
+              style={{ display: 'block', background: 'var(--cream)', border: '1px solid var(--creamdark)', borderTop: '3px solid var(--copper)', borderRadius: 4, padding: '30px 28px' }}
+            >
+              <p style={{ fontSize: '0.74rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--copper)', fontWeight: 600 }}>
+                {a.category} · {formatDate(a.date)}
+              </p>
+              <h3 className="serif" style={{ fontSize: '1.4rem', color: 'var(--forest)', margin: '12px 0 10px', lineHeight: 1.25 }}>
+                {a.title}
+              </h3>
+              <p style={{ lineHeight: 1.7, color: 'var(--mid)', fontSize: '0.95rem' }}>{excerpt(a, 140)}</p>
+              <span style={{ display: 'inline-block', marginTop: 16, color: 'var(--copper)', fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.06em' }}>
+                Read the article →
+              </span>
+            </a>
+          ))}
+        </div>
+        <div className="reveal d4" style={{ marginTop: 36 }}>
+          <a href="/articles/" className="btn-outline-dark">View all articles</a>
         </div>
       </div>
     </section>

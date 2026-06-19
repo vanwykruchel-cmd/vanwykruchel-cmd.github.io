@@ -155,7 +155,7 @@ To proceed:
 2. Pay the quoted fee by EFT to the account on the quote (reference: your quote number);
 3. As soon as payment reflects, work begins — I will confirm receipt and the timeline the same day.
 
-There is no obligation. If anything in the quote is unclear, reply or WhatsApp me and I will gladly talk you through it.
+There is no obligation. If anything in the quote is unclear, reply to this email and I will gladly talk you through it.
 
 Kind regards
 ${s.ownerName || 'Van Wyk Family Law Advisory'}

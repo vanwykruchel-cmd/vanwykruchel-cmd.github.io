@@ -1,8 +1,7 @@
 export const CONTACT = {
-  // Will become info@vanwykfamilylaw.co.za once the domain is purchased.
-  email: 'vanwykruchel@gmail.com',
-  whatsapp: '27607023765',
-  whatsappDisplay: '060 702 3765',
+  email: 'vwfamilylawadvisory@gmail.com',
+  // No phone / WhatsApp for now — a business number will be added later.
+  phone: null,
 };
 
 export const DISCLAIMER =
