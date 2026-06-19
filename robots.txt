@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vwfamilylawadvisory.com/sitemap.xml
+Sitemap: https://vanwykruchel-cmd.github.io/sitemap.xml
